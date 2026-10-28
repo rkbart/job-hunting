@@ -22,6 +22,7 @@ export default function App() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [q, setQ] = useState("")
   const [verdict, setVerdict] = useState("all")
+  const [sourceFilter, setSourceFilter] = useState("all")
   const [tab, setTab] = useState("New")
   const [page, setPage] = useState(1)
   const today = new Date().toISOString().slice(0, 10)
@@ -30,7 +31,7 @@ export default function App() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const PAGE_SIZE = 10
 
-  useEffect(() => { setPage(1) }, [q, verdict, tab])
+  useEffect(() => { setPage(1) }, [q, verdict, tab, sourceFilter])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowModal(false) }
@@ -107,6 +108,7 @@ export default function App() {
         return j.status === tab
       })
       .filter((j) => (verdict === "all" ? true : j.verdict === verdict))
+      .filter((j) => (sourceFilter === "all" ? true : j.source === sourceFilter))
       .filter((j) => (q ? (j.title + j.company + j.reason).toLowerCase().includes(q.toLowerCase()) : true))
     list.sort((a, b) => {
       let va: any, vb: any
@@ -119,7 +121,7 @@ export default function App() {
       return 0
     })
     return list
-  }, [jobs, q, verdict, tab, sortBy, sortDir])
+  }, [jobs, q, verdict, tab, sortBy, sortDir, sourceFilter])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -203,6 +205,16 @@ export default function App() {
             <option value="all">All verdicts</option>
             <option value="apply">Apply</option>
             <option value="maybe">Maybe</option>
+          </select>
+          <select
+            className="px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px]"
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+          >
+            <option value="all">All sources</option>
+            <option value="Manual">Manual</option>
+            <option value="JobStreet">JobStreet</option>
+            <option value="Kalibrr">Kalibrr</option>
           </select>
           <select
             className="px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px]"
