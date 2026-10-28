@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd job-tracker && npm run build",
+  "outputDirectory": "job-tracker/dist",
+  "installCommand": "cd job-tracker && npm install"
+}
