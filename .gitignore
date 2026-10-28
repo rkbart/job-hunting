@@ -1,0 +1,4 @@
+node_modules/
+job-tracker/node_modules/
+job-tracker/dist/
+.DS_Store
