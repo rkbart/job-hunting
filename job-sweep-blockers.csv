@@ -1,0 +1,10 @@
+date,site,reason
+2026-10-28,Indeed,login/bot-detection wall on viewjob
+2026-10-28,LinkedIn,authwall/login required on jobs search
+2026-10-28,Bossjob,keyword not applied; redirected to generic on-site list
+2026-10-28,OnlineJobs.ph,keyword not applied; returned VA listings
+2026-10-28,JobAssist,navigation timeout / possible block
+2026-10-28,Bossjob,forced on-site redirect; no remote filter honored
+2026-10-28,WeWorkRemotely,Cloudflare 'Just a moment' block
+2026-10-28,RemoteOK,keyword not applied; returned generic list
+2026-10-28,Mynimo,search not applied; no results
