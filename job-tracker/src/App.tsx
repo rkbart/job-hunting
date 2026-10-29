@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Papa from "papaparse"
 
 type Job = {
@@ -57,6 +57,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<{ inserted: number; skipped: number } | null>(null)
   const [importing, setImporting] = useState(false)
+  const importStats = useRef<{ inserted: number; skipped: number }>({ inserted: 0, skipped: 0 })
   const [form, setForm] = useState<ManualForm>({ ...INITIAL_FORM })
 
   useEffect(() => {
@@ -120,11 +121,18 @@ export default function App() {
         reader.readAsText(file)
       })
       const parsed = Papa.parse<Job>(text, { header: true, skipEmptyLines: true })
-      const existingUrls = new Set(jobs.map((j) => j.url))
-      const newJobs = parsed.data.filter((j: Job) => j.url && !existingUrls.has(j.url))
-      const skipped = parsed.data.filter((j: Job) => !j.url || existingUrls.has(j.url)).length
-      setJobs((prev) => [...newJobs, ...prev])
-      setImportResult({ inserted: newJobs.length, skipped })
+
+      // Dedupe against the latest state (not the render-time closure) so
+      // consecutive imports always compare against what's already saved.
+      setJobs((prev) => {
+        const existingUrls = new Set(prev.map((j) => j.url))
+        const newJobs = parsed.data.filter((j: Job) => j.url && !existingUrls.has(j.url))
+        const skipped = parsed.data.filter((j: Job) => !j.url || existingUrls.has(j.url)).length
+        importStats.current = { inserted: newJobs.length, skipped }
+        return [...newJobs, ...prev]
+      })
+
+      setImportResult(importStats.current)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed")
     } finally {
