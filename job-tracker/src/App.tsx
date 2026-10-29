@@ -39,7 +39,7 @@ const INITIAL_FORM: ManualForm = {
   verdict: "maybe",
 }
 
-const STATUSES = ["New", "Applied", "Interview", "Offer", "Rejected"]
+const STATUSES = ["New", "Applied", "Interview", "Offer", "Rejected", "Set Aside"]
 const TABS = ["All", "Today", ...STATUSES]
 const PAGE_SIZE = 10
 
