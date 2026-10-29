@@ -26,6 +26,8 @@ type ManualForm = {
   verdict: string
 }
 
+const STORAGE_KEY = "tracker-jobs"
+
 const INITIAL_FORM: ManualForm = {
   title: "",
   company: "",
@@ -52,11 +54,23 @@ export default function App() {
   const [showModal, setShowModal] = useState(false)
   const [sortBy, setSortBy] = useState("score")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<{ inserted: number; skipped: number } | null>(null)
   const [importing, setImporting] = useState(false)
   const [form, setForm] = useState<ManualForm>({ ...INITIAL_FORM })
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) setJobs(JSON.parse(raw) as Job[])
+    } catch {
+      setError("Failed to load saved jobs")
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs))
+  }, [jobs])
 
   useEffect(() => {
     setPage(1)
@@ -70,69 +84,26 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey)
   }, [])
 
-  const loadJobs = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetch("/api/jobs")
-      if (!res.ok) throw new Error("Failed to load jobs")
-      setJobs((await res.json()) as Job[])
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load jobs")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadJobs()
-  }, [])
-
-  const patchJob = async (url: string, body: Record<string, string | null>) => {
-    const res = await fetch(`/api/jobs/${encodeURIComponent(url)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-    if (!res.ok) throw new Error("Failed to update job")
-  }
-
-  const handleStatusChange = async (job: Job, status: string) => {
+  const handleStatusChange = (job: Job, status: string) => {
     const now = new Date().toISOString().slice(0, 10)
-    const body: Record<string, string | null> = { status }
-    if (status === "Applied" && !job.appliedDate) body.appliedDate = now
-    if (status === "Interview" && !job.interviewDate) body.interviewDate = now
-
-    // Optimistically update so the UI stays snappy; revert from server on failure.
     setJobs((prev) =>
       prev.map((j) =>
         j.url === job.url
           ? {
               ...j,
               status,
-              appliedDate: body.appliedDate ?? j.appliedDate ?? null,
-              interviewDate: body.interviewDate ?? j.interviewDate ?? null,
+              appliedDate: status === "Applied" && !j.appliedDate ? now : j.appliedDate ?? null,
+              interviewDate: status === "Interview" && !j.interviewDate ? now : j.interviewDate ?? null,
             }
           : j
       )
     )
-
-    try {
-      await patchJob(job.url, body)
-    } catch {
-      await loadJobs()
-    }
   }
 
-  const handleDateChange = async (job: Job, field: "appliedDate" | "interviewDate", value: string) => {
+  const handleDateChange = (job: Job, field: "appliedDate" | "interviewDate", value: string) => {
     setJobs((prev) =>
       prev.map((j) => (j.url === job.url ? { ...j, [field]: value || null } : j))
     )
-    try {
-      await patchJob(job.url, { status: job.status, [field]: value || null })
-    } catch {
-      await loadJobs()
-    }
   }
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,17 +119,12 @@ export default function App() {
         reader.onerror = () => reject(reader.error || new Error("Failed to read file"))
         reader.readAsText(file)
       })
-      // Validate/parse with PapaParse (the backend parses and dedupes the posted text).
-      Papa.parse(text, { header: true, skipEmptyLines: true })
-      const res = await fetch("/api/import-csv", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ csv: text }),
-      })
-      if (!res.ok) throw new Error("Import failed")
-      const result = await res.json()
-      setImportResult({ inserted: Number(result.inserted ?? 0), skipped: Number(result.skipped ?? 0) })
-      await loadJobs()
+      const parsed = Papa.parse<Job>(text, { header: true, skipEmptyLines: true })
+      const existingUrls = new Set(jobs.map((j) => j.url))
+      const newJobs = parsed.data.filter((j: Job) => j.url && !existingUrls.has(j.url))
+      const skipped = parsed.data.filter((j: Job) => !j.url || existingUrls.has(j.url)).length
+      setJobs((prev) => [...newJobs, ...prev])
+      setImportResult({ inserted: newJobs.length, skipped })
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed")
     } finally {
@@ -166,32 +132,22 @@ export default function App() {
     }
   }
 
-  const addManual = async () => {
+  const addManual = () => {
     if (!form.title || !form.url) return
-    const row = {
+    const j: Job = {
       date_found: new Date().toISOString().slice(0, 10),
       title: form.title,
-      company: form.company,
-      score: form.score,
-      verdict: form.verdict,
-      reason: form.reason,
+      company: form.company || "",
+      score: form.score || "50",
+      verdict: form.verdict || "maybe",
+      reason: form.reason || "",
       url: form.url,
-      source: form.source,
-      status: form.status,
+      source: form.source || "Manual",
+      status: form.status || "New",
     }
-    try {
-      const res = await fetch("/api/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(row),
-      })
-      if (!res.ok) throw new Error("Could not add job (duplicate URL?)")
-      setShowModal(false)
-      setForm({ ...INITIAL_FORM })
-      await loadJobs()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add job")
-    }
+    setJobs((prev) => [j, ...prev])
+    setShowModal(false)
+    setForm({ ...INITIAL_FORM })
   }
 
   const filtered = useMemo(() => {
@@ -206,19 +162,10 @@ export default function App() {
       .filter((j) => (q ? (j.title + j.company + j.reason).toLowerCase().includes(q.toLowerCase()) : true))
     list.sort((a, b) => {
       let va: any, vb: any
-      if (sortBy === "score") {
-        va = Number(a.score)
-        vb = Number(b.score)
-      } else if (sortBy === "found") {
-        va = a.date_found
-        vb = b.date_found
-      } else if (sortBy === "applied") {
-        va = a.appliedDate || ""
-        vb = b.appliedDate || ""
-      } else {
-        va = a.title
-        vb = b.title
-      }
+      if (sortBy === "score") { va = Number(a.score); vb = Number(b.score) }
+      else if (sortBy === "found") { va = a.date_found; vb = b.date_found }
+      else if (sortBy === "applied") { va = a.appliedDate || ""; vb = b.appliedDate || "" }
+      else { va = a.title; vb = b.title }
       if (va < vb) return sortDir === "asc" ? -1 : 1
       if (va > vb) return sortDir === "asc" ? 1 : -1
       return 0
@@ -232,9 +179,7 @@ export default function App() {
   const counts = useMemo(() => {
     const c: Record<string, number> = { All: jobs.length }
     c["Today"] = jobs.filter((j) => j.date_found === today).length
-    STATUSES.forEach((s) => {
-      c[s] = jobs.filter((j) => j.status === s).length
-    })
+    STATUSES.forEach((s) => { c[s] = jobs.filter((j) => j.status === s).length })
     return c
   }, [jobs])
 
@@ -272,6 +217,8 @@ export default function App() {
             </button>
           </div>
         )}
+
+        {error && <p className="text-red-600 text-[17px] mb-4">{error}</p>}
 
         <div className="flex gap-2 mb-4 flex-wrap">
           {TABS.map((t) => (
@@ -329,9 +276,7 @@ export default function App() {
           </button>
         </div>
 
-        {loading && <p className="text-[#7a7a7a] text-[17px]">Loading jobs…</p>}
-        {error && <p className="text-red-600 text-[17px]">{error}. Use Import CSV to load data.</p>}
-        {!loading && !error && filtered.length === 0 && (
+        {!error && filtered.length === 0 && (
           <p className="text-[#7a7a7a] text-[17px]">No jobs match. Try importing a CSV or adding manually.</p>
         )}
 
