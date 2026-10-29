@@ -11,12 +11,35 @@ type Job = {
   url: string
   source: string
   status: string
-  appliedDate?: string
-  interviewDate?: string
+  appliedDate?: string | null
+  interviewDate?: string | null
+}
+
+type ManualForm = {
+  title: string
+  company: string
+  url: string
+  source: string
+  score: string
+  reason: string
+  status: string
+  verdict: string
+}
+
+const INITIAL_FORM: ManualForm = {
+  title: "",
+  company: "",
+  url: "",
+  source: "Manual",
+  score: "50",
+  reason: "",
+  status: "New",
+  verdict: "maybe",
 }
 
 const STATUSES = ["New", "Applied", "Interview", "Offer", "Rejected"]
 const TABS = ["All", "Today", ...STATUSES]
+const PAGE_SIZE = 10
 
 export default function App() {
   const [jobs, setJobs] = useState<Job[]>([])
@@ -29,75 +52,146 @@ export default function App() {
   const [showModal, setShowModal] = useState(false)
   const [sortBy, setSortBy] = useState("score")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
-  const PAGE_SIZE = 10
-
-  useEffect(() => { setPage(1) }, [q, verdict, tab, sourceFilter])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [importResult, setImportResult] = useState<{ inserted: number; skipped: number } | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [form, setForm] = useState<ManualForm>({ ...INITIAL_FORM })
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowModal(false) }
+    setPage(1)
+  }, [q, verdict, tab, sourceFilter])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowModal(false)
+    }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [])
 
-  useEffect(() => {
-    fetch("/job-sweep.csv")
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to load CSV")
-        return r.text()
-      })
-      .then((t) => {
-        const parsed = Papa.parse<Job>(t, { header: true, skipEmptyLines: true })
-        const stored = JSON.parse(localStorage.getItem("job-status") || "{}")
-        const dates = JSON.parse(localStorage.getItem("job-dates") || "{}")
-        const manual = JSON.parse(localStorage.getItem("manual-jobs") || "[]")
-        setJobs([...manual, ...parsed.data.map((j) => ({
-          ...j,
-          status: stored[j.url] || j.status || "New",
-          appliedDate: dates[j.url]?.applied,
-          interviewDate: dates[j.url]?.interview,
-        }))])
-        setLoading(false)
-      })
-      .catch((e) => { setError(e.message); setLoading(false) })
-  }, [])
-
-  const updateStatus = (url: string, status: string) => {
-    const now = new Date().toISOString().slice(0, 10)
-    setJobs((prev) => prev.map((j) => {
-      if (j.url !== url) return j
-      const next = { ...j, status }
-      if (status === "Applied" && !j.appliedDate) next.appliedDate = now
-      if (status === "Interview" && !j.interviewDate) next.interviewDate = now
-      return next
-    }))
-    const stored = JSON.parse(localStorage.getItem("job-status") || "{}")
-    stored[url] = status
-    localStorage.setItem("job-status", JSON.stringify(stored))
-    const dates = JSON.parse(localStorage.getItem("job-dates") || "{}")
-    if (!dates[url]) dates[url] = {}
-    if (status === "Applied" && !dates[url].applied) dates[url].applied = now
-    if (status === "Interview" && !dates[url].interview) dates[url].interview = now
-    localStorage.setItem("job-dates", JSON.stringify(dates))
+  const loadJobs = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/jobs")
+      if (!res.ok) throw new Error("Failed to load jobs")
+      setJobs((await res.json()) as Job[])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load jobs")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const t = String(reader.result || "")
-      const parsed = Papa.parse<Job>(t, { header: true, skipEmptyLines: true })
-      const stored = JSON.parse(localStorage.getItem("job-status") || "{}")
-      const dates = JSON.parse(localStorage.getItem("job-dates") || "{}")
-      const manual = JSON.parse(localStorage.getItem("manual-jobs") || "[]")
-      setJobs([...manual, ...parsed.data.map((j) => ({
-        ...j,
-        status: stored[j.url] || j.status || "New",
-        appliedDate: dates[j.url]?.applied,
-        interviewDate: dates[j.url]?.interview,
-      }))])
+  useEffect(() => {
+    loadJobs()
+  }, [])
+
+  const patchJob = async (url: string, body: Record<string, string | null>) => {
+    const res = await fetch(`/api/jobs/${encodeURIComponent(url)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) throw new Error("Failed to update job")
+  }
+
+  const handleStatusChange = async (job: Job, status: string) => {
+    const now = new Date().toISOString().slice(0, 10)
+    const body: Record<string, string | null> = { status }
+    if (status === "Applied" && !job.appliedDate) body.appliedDate = now
+    if (status === "Interview" && !job.interviewDate) body.interviewDate = now
+
+    // Optimistically update so the UI stays snappy; revert from server on failure.
+    setJobs((prev) =>
+      prev.map((j) =>
+        j.url === job.url
+          ? {
+              ...j,
+              status,
+              appliedDate: body.appliedDate ?? j.appliedDate ?? null,
+              interviewDate: body.interviewDate ?? j.interviewDate ?? null,
+            }
+          : j
+      )
+    )
+
+    try {
+      await patchJob(job.url, body)
+    } catch {
+      await loadJobs()
     }
-    reader.readAsText(file)
+  }
+
+  const handleDateChange = async (job: Job, field: "appliedDate" | "interviewDate", value: string) => {
+    setJobs((prev) =>
+      prev.map((j) => (j.url === job.url ? { ...j, [field]: value || null } : j))
+    )
+    try {
+      await patchJob(job.url, { status: job.status, [field]: value || null })
+    } catch {
+      await loadJobs()
+    }
+  }
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    ;(e.target as HTMLInputElement).value = ""
+    if (!file) return
+    setImporting(true)
+    setImportResult(null)
+    try {
+      const text = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result ?? ""))
+        reader.onerror = () => reject(reader.error || new Error("Failed to read file"))
+        reader.readAsText(file)
+      })
+      // Validate/parse with PapaParse (the backend parses and dedupes the posted text).
+      Papa.parse(text, { header: true, skipEmptyLines: true })
+      const res = await fetch("/api/import-csv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csv: text }),
+      })
+      if (!res.ok) throw new Error("Import failed")
+      const result = await res.json()
+      setImportResult({ inserted: Number(result.inserted ?? 0), skipped: Number(result.skipped ?? 0) })
+      await loadJobs()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Import failed")
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const addManual = async () => {
+    if (!form.title || !form.url) return
+    const row = {
+      date_found: new Date().toISOString().slice(0, 10),
+      title: form.title,
+      company: form.company,
+      score: form.score,
+      verdict: form.verdict,
+      reason: form.reason,
+      url: form.url,
+      source: form.source,
+      status: form.status,
+    }
+    try {
+      const res = await fetch("/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(row),
+      })
+      if (!res.ok) throw new Error("Could not add job (duplicate URL?)")
+      setShowModal(false)
+      setForm({ ...INITIAL_FORM })
+      await loadJobs()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to add job")
+    }
   }
 
   const filtered = useMemo(() => {
@@ -112,10 +206,19 @@ export default function App() {
       .filter((j) => (q ? (j.title + j.company + j.reason).toLowerCase().includes(q.toLowerCase()) : true))
     list.sort((a, b) => {
       let va: any, vb: any
-      if (sortBy === "score") { va = Number(a.score); vb = Number(b.score) }
-      else if (sortBy === "found") { va = a.date_found; vb = b.date_found }
-      else if (sortBy === "applied") { va = a.appliedDate || ""; vb = b.appliedDate || "" }
-      else { va = a.title; vb = b.title }
+      if (sortBy === "score") {
+        va = Number(a.score)
+        vb = Number(b.score)
+      } else if (sortBy === "found") {
+        va = a.date_found
+        vb = b.date_found
+      } else if (sortBy === "applied") {
+        va = a.appliedDate || ""
+        vb = b.appliedDate || ""
+      } else {
+        va = a.title
+        vb = b.title
+      }
       if (va < vb) return sortDir === "asc" ? -1 : 1
       if (va > vb) return sortDir === "asc" ? 1 : -1
       return 0
@@ -126,36 +229,12 @@ export default function App() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState<Partial<Job>>({ status: "New", verdict: "maybe", score: "50", source: "Manual" })
-
-  const addManual = () => {
-    if (!form.title || !form.url) return
-    const j: Job = {
-      date_found: new Date().toISOString().slice(0, 10),
-      title: form.title!,
-      company: form.company || "",
-      score: form.score || "50",
-      verdict: form.verdict || "maybe",
-      reason: form.reason || "",
-      url: form.url!,
-      source: form.source || "Manual",
-      status: form.status || "New",
-    }
-    const next = [j, ...jobs]
-    setJobs(next)
-    const manual = JSON.parse(localStorage.getItem("manual-jobs") || "[]")
-    manual.push(j)
-    localStorage.setItem("manual-jobs", JSON.stringify(manual))
-    setShowModal(false)
-    setForm({ status: "New", verdict: "maybe", score: "50", source: "Manual" })
-  }
-
   const counts = useMemo(() => {
     const c: Record<string, number> = { All: jobs.length }
     c["Today"] = jobs.filter((j) => j.date_found === today).length
-    STATUSES.forEach((s) => { c[s] = jobs.filter((j) => j.status === s).length })
+    STATUSES.forEach((s) => {
+      c[s] = jobs.filter((j) => j.status === s).length
+    })
     return c
   }, [jobs])
 
@@ -164,19 +243,35 @@ export default function App() {
       <div className="max-w-7xl mx-auto px-6 py-10">
         <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-semibold tracking-tight" style={{ letterSpacing: "-0.28px" }}>Job Sweep Tracker</h1>
+            <h1 className="text-4xl font-semibold tracking-tight" style={{ letterSpacing: "-0.28px" }}>
+              Job Sweep Tracker
+            </h1>
             <p className="text-[#7a7a7a] mt-2 text-[17px]">Ranked shortlist — {jobs.length} roles</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowModal(true)} className="px-5 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px] hover:border-[#0066cc] transition">
+            <button
+              onClick={() => setShowModal(true)}
+              className="px-5 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px] hover:border-[#0066cc] transition"
+            >
               + Add manual
             </button>
-            <label className="px-5 py-2.5 rounded-lg bg-[#0066cc] text-white text-[17px] cursor-pointer hover:bg-[#0071e3] transition">
-              Import CSV
-              <input type="file" accept=".csv" className="hidden" onChange={handleImport} />
+            <label
+              className={`px-5 py-2.5 rounded-lg text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#0066cc] text-white hover:bg-[#0071e3]"}`}
+            >
+              {importing ? "Importing…" : "Import CSV"}
+              <input type="file" accept=".csv" className="hidden" disabled={importing} onChange={handleImport} />
             </label>
           </div>
         </header>
+
+        {importResult && (
+          <div className="mb-4 rounded-lg bg-[#e8f5e9] border border-[#1b5e20] text-[#1b5e20] px-5 py-3 text-[15px] flex items-center justify-between">
+            <span>Imported: {importResult.inserted} new, {importResult.skipped} already tracked</span>
+            <button onClick={() => setImportResult(null)} className="underline underline-offset-4 hover:text-[#1b5e20]">
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="flex gap-2 mb-4 flex-wrap">
           {TABS.map((t) => (
@@ -246,42 +341,55 @@ export default function App() {
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-[21px] font-semibold" style={{ letterSpacing: "0.231px" }}>{j.title}</h2>
+                    <h2 className="text-[21px] font-semibold" style={{ letterSpacing: "0.231px" }}>
+                      {j.title}
+                    </h2>
                     <span className={`text-xs px-2 py-0.5 rounded-lg ${j.verdict === "apply" ? "bg-[#e8f5e9] text-[#1b5e20]" : "bg-[#fff3e0] text-[#e65100]"}`}>
                       {j.score} · {j.verdict}
                     </span>
                     <span className="text-xs px-2 py-0.5 rounded-lg bg-[#f5f5f7] text-[#7a7a7a]">{j.source}</span>
                   </div>
                   <p className="text-[#1d1d1f] mt-1 font-medium">{j.company}</p>
-                  <p className="text-[14px] text-[#7a7a7a] mt-2" style={{ lineHeight: 1.43 }}>{j.reason}</p>
+                  <p className="text-[14px] text-[#7a7a7a] mt-2" style={{ lineHeight: 1.43 }}>
+                    {j.reason}
+                  </p>
                   <div className="flex gap-3 mt-2 text-[12px] text-[#7a7a7a] flex-wrap">
                     <span>Found: {j.date_found}</span>
                     {j.appliedDate && <span>Applied: {j.appliedDate}</span>}
                     {j.interviewDate && <span>Interview: {j.interviewDate}</span>}
                   </div>
-                  <div className="mt-2">
-                    <input
-                      type="date"
-                      className="px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px]"
-                      value={j.appliedDate || ""}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        setJobs((prev) => prev.map((x) => (x.url === j.url ? { ...x, appliedDate: v } : x)))
-                        const dates = JSON.parse(localStorage.getItem("job-dates") || "{}")
-                        if (!dates[j.url]) dates[j.url] = {}
-                        dates[j.url].applied = v
-                        localStorage.setItem("job-dates", JSON.stringify(dates))
-                      }}
-                    />
+                  <div className="mt-2 flex gap-3">
+                    <div>
+                      <label className="text-[12px] text-[#7a7a7a] block mb-1">Applied date</label>
+                      <input
+                        type="date"
+                        className="px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px] w-[160px]"
+                        value={j.appliedDate || ""}
+                        onChange={(e) => handleDateChange(j, "appliedDate", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[12px] text-[#7a7a7a] block mb-1">Interview date</label>
+                      <input
+                        type="date"
+                        className="px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px] w-[160px]"
+                        value={j.interviewDate || ""}
+                        onChange={(e) => handleDateChange(j, "interviewDate", e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 md:items-end">
                   <select
                     className="px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
                     value={j.status}
-                    onChange={(e) => updateStatus(j.url, e.target.value)}
+                    onChange={(e) => handleStatusChange(j, e.target.value)}
                   >
-                    {STATUSES.map((s) => <option key={s}>{s}</option>)}
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                   <a
                     href={j.url}
@@ -305,9 +413,7 @@ export default function App() {
           >
             Prev
           </button>
-          <span className="text-sm text-[#7a7a7a]">
-            Page {page} of {totalPages}
-          </span>
+          <span className="text-sm text-[#7a7a7a]">Page {page} of {totalPages}</span>
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -322,29 +428,53 @@ export default function App() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-[8px] p-6 w-full max-w-lg space-y-3">
             <h2 className="text-[21px] font-semibold">Add manual job</h2>
-            {(["title", "company", "url", "source", "score", "reason"] as const).map((f) => (
+            {(
+              [
+              "title",
+              "company",
+              "url",
+              "source",
+              "score",
+              "reason",
+            ] as const).map((f) => (
               <label key={f} className="block">
                 <span className="text-[12px] text-[#7a7a7a] capitalize">{f}</span>
                 <input
                   className="w-full px-4 py-2 rounded-[8px] border border-[#e0e0e0] text-[17px]"
                   placeholder={f}
-                  value={(form as any)[f] || ""}
+                  value={form[f]}
                   onChange={(e) => setForm({ ...form, [f]: e.target.value })}
                 />
               </label>
             ))}
             <div className="flex gap-3">
-              <select className="flex-1 px-4 py-2 rounded-[8px] border border-[#e0e0e0]" value={form.verdict} onChange={(e) => setForm({ ...form, verdict: e.target.value })}>
+              <select
+                className="flex-1 px-4 py-2 rounded-[8px] border border-[#e0e0e0]"
+                value={form.verdict}
+                onChange={(e) => setForm({ ...form, verdict: e.target.value })}
+              >
                 <option value="apply">apply</option>
                 <option value="maybe">maybe</option>
               </select>
-              <select className="flex-1 px-4 py-2 rounded-[8px] border border-[#e0e0e0]" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                {STATUSES.map((s) => <option key={s}>{s}</option>)}
+              <select
+                className="flex-1 px-4 py-2 rounded-[8px] border border-[#e0e0e0]"
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg border border-[#e0e0e0]">Cancel</button>
-              <button onClick={addManual} className="px-4 py-2 rounded-lg bg-[#0066cc] text-white">Save</button>
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg border border-[#e0e0e0]">
+                Cancel
+              </button>
+              <button onClick={addManual} className="px-4 py-2 rounded-lg bg-[#0066cc] text-white">
+                Save
+              </button>
             </div>
           </div>
         </div>
