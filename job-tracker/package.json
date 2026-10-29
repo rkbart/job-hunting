@@ -7,14 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview",
-    "server": "tsx watch server/index.ts",
-    "server:build": "tsc -b tsconfig.node.json"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@types/papaparse": "^5.5.2",
-    "express": "^5.1.0",
     "papaparse": "^5.7.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -25,11 +22,9 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@types/express": "^5.0.5",
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.89.0",
     "typescript": "~7.0.2",
-    "tsx": "^4.20.6",
     "vite": "^8.3.5"
   }
 }
