@@ -8,3 +8,7 @@ date,site,reason
 2026-10-28,WeWorkRemotely,Cloudflare 'Just a moment' block
 2026-10-28,RemoteOK,keyword not applied; returned generic list
 2026-10-28,Mynimo,search not applied; no results
+2026-10-30,Indeed,Cloudflare 'Just a moment' bot detection wall on search results
+2026-10-30,JobAssist,navigation timeout / possible block
+2026-10-30,Bossjob,forced on-site redirect; no remote filter honored; no software roles
+2026-10-30,WeWorkRemotely,Cloudflare 'Verify you are human' on job detail pages
