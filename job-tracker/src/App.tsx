@@ -138,6 +138,9 @@ export default function App() {
   const importBatchRef = useRef<string>("")
   const [importPreview, setImportPreview] = useState<{ newJobs: Job[]; updates: Job[]; skipped: number; headers: string[] } | null>(null)
   const [showImportPreview, setShowImportPreview] = useState(false)
+  const [showErrorToast, setShowErrorToast] = useState(false)
+  const errorMessage = useRef<string | null>(null)
+  const [uniqueSources, setUniqueSources] = useState<string[]>([])
   const importStats = useRef<{ inserted: number; skipped: number; updated: number }>({ inserted: 0, skipped: 0, updated: 0 })
   const [form, setForm] = useState<ManualForm>({ ...INITIAL_FORM })
 
@@ -269,11 +272,14 @@ export default function App() {
   }
 
   const filtered = useMemo(() => {
-    const list = jobsState
+    let list = jobsState
       .filter((j) => {
         if (tab === "All") return true
-        if (tab === "Today") return j.date_found === today
-        return j.status === tab
+      if (tab === "Today") {
+        list = list.filter((j) => j.date_found === today)
+      } else if (tab !== "All") {
+        list = list.filter((j) => j.status === tab)
+      }
       })
       .filter((j) => (verdict === "all" ? true : j.verdict === verdict))
       .filter((j) => (sourceFilter === "all" ? true : j.source === sourceFilter))
