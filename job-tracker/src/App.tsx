@@ -55,15 +55,24 @@ export default function App() {
   const [sortBy, setSortBy] = useState("score")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [error, setError] = useState<string | null>(null)
-  const [importResult, setImportResult] = useState<{ inserted: number; skipped: number } | null>(null)
+  const [importResult, setImportResult] = useState<{ inserted: number; skipped: number; updated: number } | null>(null)
   const [importing, setImporting] = useState(false)
-  const importStats = useRef<{ inserted: number; skipped: number }>({ inserted: 0, skipped: 0 })
+  const importStats = useRef<{ inserted: number; skipped: number; updated: number }>({ inserted: 0, skipped: 0, updated: 0 })
   const [form, setForm] = useState<ManualForm>({ ...INITIAL_FORM })
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) setJobs(JSON.parse(raw) as Job[])
+      if (raw) {
+        const parsed = JSON.parse(raw) as Job[]
+        const seen = new Set<string>()
+        const deduped = parsed.filter((j) => {
+          if (seen.has(j.url)) return false
+          seen.add(j.url)
+          return true
+        })
+        setJobs(deduped)
+      }
     } catch {
       setError("Failed to load saved jobs")
     }
@@ -125,11 +134,37 @@ export default function App() {
       // Dedupe against the latest state (not the render-time closure) so
       // consecutive imports always compare against what's already saved.
       setJobs((prev) => {
-        const existingUrls = new Set(prev.map((j) => j.url))
-        const newJobs = parsed.data.filter((j: Job) => j.url && !existingUrls.has(j.url))
-        const skipped = parsed.data.filter((j: Job) => !j.url || existingUrls.has(j.url)).length
-        importStats.current = { inserted: newJobs.length, skipped }
-        return [...newJobs, ...prev]
+        const byUrl = new Map<string, Job>()
+        for (const j of prev) byUrl.set(j.url, j)
+
+        const newJobs: Job[] = []
+        let skipped = 0
+        let updated = 0
+
+        for (const j of parsed.data) {
+          if (!j.url) { skipped++; continue }
+          const existing = byUrl.get(j.url)
+          if (existing) {
+            skipped++
+            // If the existing entry has been acted upon (not "New"),
+            // refresh its fields but preserve status and date fields.
+            if (existing.status !== "New") {
+              byUrl.set(j.url, {
+                ...existing,
+                ...j,
+                status: existing.status,
+                appliedDate: existing.appliedDate,
+                interviewDate: existing.interviewDate,
+              })
+              updated++
+            }
+          } else {
+            newJobs.push(j)
+          }
+        }
+
+        importStats.current = { inserted: newJobs.length, skipped, updated }
+        return [...newJobs, ...Array.from(byUrl.values())]
       })
 
       setImportResult(importStats.current)
@@ -142,18 +177,21 @@ export default function App() {
 
   const addManual = () => {
     if (!form.title || !form.url) return
-    const j: Job = {
-      date_found: new Date().toISOString().slice(0, 10),
-      title: form.title,
-      company: form.company || "",
-      score: form.score || "50",
-      verdict: form.verdict || "maybe",
-      reason: form.reason || "",
-      url: form.url,
-      source: form.source || "Manual",
-      status: form.status || "New",
-    }
-    setJobs((prev) => [j, ...prev])
+    setJobs((prev) => {
+      if (prev.some((j) => j.url === form.url)) return prev
+      const j: Job = {
+        date_found: new Date().toISOString().slice(0, 10),
+        title: form.title,
+        company: form.company || "",
+        score: form.score || "50",
+        verdict: form.verdict || "maybe",
+        reason: form.reason || "",
+        url: form.url,
+        source: form.source || "Manual",
+        status: form.status || "New",
+      }
+      return [j, ...prev]
+    })
     setShowModal(false)
     setForm({ ...INITIAL_FORM })
   }
@@ -232,7 +270,7 @@ export default function App() {
 
         {importResult && (
           <div className="mb-4 rounded-lg bg-[#e8f5e9] border border-[#1b5e20] text-[#1b5e20] px-5 py-3 text-[15px] flex items-center justify-between">
-            <span>Imported: {importResult.inserted} new, {importResult.skipped} already tracked</span>
+            <span>Imported: {importResult.inserted} new, {importResult.updated} updated, {importResult.skipped} already tracked</span>
             <button onClick={() => setImportResult(null)} className="underline underline-offset-4 hover:text-[#1b5e20]">
               Dismiss
             </button>
