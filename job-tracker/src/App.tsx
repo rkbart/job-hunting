@@ -135,6 +135,9 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<{ inserted: number; skipped: number; updated: number } | null>(null)
   const [importing, setImporting] = useState(false)
+  const importBatchRef = useRef<string>("")
+  const [importPreview, setImportPreview] = useState<{ newJobs: Job[]; updates: Job[]; skipped: number; headers: string[] } | null>(null)
+  const [showImportPreview, setShowImportPreview] = useState(false)
   const importStats = useRef<{ inserted: number; skipped: number; updated: number }>({ inserted: 0, skipped: 0, updated: 0 })
   const [form, setForm] = useState<ManualForm>({ ...INITIAL_FORM })
 

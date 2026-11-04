@@ -23,4 +23,12 @@ CREATE INDEX IF NOT EXISTS jobs_status_idx ON jobs(status);
 CREATE INDEX IF NOT EXISTS jobs_date_found_idx ON jobs(date_found);
 `,
   },
+  {
+    id: '0002_import_tracking',
+    sql: `
+ALTER TABLE jobs ADD COLUMN import_batch TEXT;
+--> statement-breakpoint
+ALTER TABLE jobs ADD COLUMN imported_at INTEGER;
+`,
+  },
 ]

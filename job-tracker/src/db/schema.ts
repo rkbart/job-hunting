@@ -14,6 +14,8 @@ export const jobs = sqliteTable('jobs', {
   interviewDate: text('interview_date'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+  importBatch: text('import_batch'),
+  importedAt: integer('imported_at', { mode: 'timestamp' }),
 }, (t) => ({
   statusIdx: index('jobs_status_idx').on(t.status),
   dateFoundIdx: index('jobs_date_found_idx').on(t.dateFound),
