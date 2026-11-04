@@ -369,6 +369,7 @@ export default function App() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[15px] text-[#7a7a7a] hover:text-[#1d1d1f] cursor-pointer transition" onClick={() => { setQ("") } } aria-label="Clear search">×</span>
           <select
             className="px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px]"
             value={verdict}
