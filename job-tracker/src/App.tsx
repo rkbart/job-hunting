@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import Papa from "papaparse"
+import { db, migrationsReady } from "./db/client"
+import { jobs } from "./db/schema"
+import { eq } from "drizzle-orm"
 
 type Job = {
   date_found: string
@@ -40,9 +43,8 @@ const INITIAL_FORM: ManualForm = {
 const STATUSES = ["New", "Applied", "Interview", "Offer", "Rejected", "Set Aside"]
 const TABS = ["All", "Today", ...STATUSES]
 const PAGE_SIZE = 10
-const API_BASE = import.meta.env.VITE_API_BASE || ""
 
-function rowToJob(row: any): Job {
+function rowToJob(row: typeof jobs.$inferSelect): Job {
   return {
     date_found: row.dateFound,
     title: row.title,
@@ -58,19 +60,49 @@ function rowToJob(row: any): Job {
   }
 }
 
-async function loadJobsFromAPI(): Promise<Job[]> {
-  const res = await fetch(API_BASE + "/api/jobs")
-  const rows = await res.json()
+async function loadJobsFromDB(): Promise<Job[]> {
+  const rows = await db.select().from(jobs)
   return rows.map(rowToJob)
 }
 
-async function saveJobToAPI(j: Job) {
-  await fetch(API_BASE + "/api/jobs", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+async function saveJobToDB(j: Job) {
+  await db.insert(jobs).values({
+    url: j.url,
+    title: j.title,
+    company: j.company,
+    score: j.score,
+    verdict: j.verdict,
+    reason: j.reason,
+    source: j.source,
+    status: j.status,
+    dateFound: j.date_found,
+    appliedDate: j.appliedDate ?? null,
+    interviewDate: j.interviewDate ?? null,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  }).onConflictDoNothing()
+}
+
+async function updateJobInDB(url: string, patch: Partial<Job>) {
+  const values: Record<string, any> = { updatedAt: Date.now() }
+  if (patch.status !== undefined) values.status = patch.status
+  if (patch.appliedDate !== undefined) values.appliedDate = patch.appliedDate ?? null
+  if (patch.interviewDate !== undefined) values.interviewDate = patch.interviewDate ?? null
+  if (patch.title !== undefined) values.title = patch.title
+  if (patch.company !== undefined) values.company = patch.company
+  if (patch.score !== undefined) values.score = patch.score
+  if (patch.verdict !== undefined) values.verdict = patch.verdict
+  if (patch.reason !== undefined) values.reason = patch.reason
+  if (patch.source !== undefined) values.source = patch.source
+  if (patch.date_found !== undefined) values.dateFound = patch.date_found
+
+  await db.update(jobs).set(values).where(eq(jobs.url, url))
+}
+
+async function importJobsToDB(jobsList: Job[]) {
+  const now = Date.now()
+  for (const j of jobsList) {
+    await db.insert(jobs).values({
       url: j.url,
       title: j.title,
       company: j.company,
@@ -79,58 +111,12 @@ async function saveJobToAPI(j: Job) {
       reason: j.reason,
       source: j.source,
       status: j.status,
-      date_found: j.date_found,
+      dateFound: j.date_found,
       appliedDate: j.appliedDate ?? null,
       interviewDate: j.interviewDate ?? null,
-    }),
-  })
-}
-
-async function updateJobInAPI(url: string, patch: Partial<Job>) {
-  await fetch(API_BASE + `/api/jobs/${url}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      status: patch.status,
-      appliedDate: patch.appliedDate ?? null,
-      interviewDate: patch.interviewDate ?? null,
-      title: patch.title,
-      company: patch.company,
-      score: patch.score,
-      verdict: patch.verdict,
-      reason: patch.reason,
-      source: patch.source,
-      date_found: patch.date_found,
-    }),
-  })
-}
-
-async function importJobsToAPI(jobsList: Job[]) {
-  const now = Date.now()
-  for (const j of jobsList) {
-    await fetch(API_BASE + "/api/jobs", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url: j.url,
-        title: j.title,
-        company: j.company,
-        score: j.score,
-        verdict: j.verdict,
-        reason: j.reason,
-        source: j.source,
-        status: j.status,
-        date_found: j.date_found,
-        appliedDate: j.appliedDate ?? null,
-        interviewDate: j.interviewDate ?? null,
-        createdAt: now,
-        updatedAt: now,
-      }),
-    })
+      createdAt: now,
+      updatedAt: now,
+    }).onConflictDoNothing()
   }
 }
 
@@ -156,7 +142,9 @@ export default function App() {
     let mounted = true
     ;(async () => {
       try {
-        const rows = await loadJobsFromAPI()
+        await migrationsReady
+        if (!mounted) return
+        const rows = await loadJobsFromDB()
         setJobs(rows)
         setLoaded(true)
       } catch {
@@ -186,7 +174,7 @@ export default function App() {
       appliedDate: status === "Applied" && !job.appliedDate ? now : job.appliedDate ?? null,
       interviewDate: status === "Interview" && !job.interviewDate ? now : job.interviewDate ?? null,
     }
-    await updateJobInAPI(job.url, patch)
+    await updateJobInDB(job.url, patch)
     setJobs((prev) =>
       prev.map((j) =>
         j.url === job.url ? { ...j, ...patch } : j
@@ -196,7 +184,7 @@ export default function App() {
 
   const handleDateChange = async (job: Job, field: "appliedDate" | "interviewDate", value: string) => {
     const patch: Partial<Job> = { [field]: value || null }
-    await updateJobInAPI(job.url, patch)
+    await updateJobInDB(job.url, patch)
     setJobs((prev) =>
       prev.map((j) => (j.url === job.url ? { ...j, [field]: value || null } : j))
     )
@@ -227,7 +215,7 @@ export default function App() {
         if (existingUrls.has(j.url)) {
           skipped++
           if (j.status !== "New") {
-            await updateJobInAPI(j.url, {
+            await updateJobInDB(j.url, {
               title: j.title,
               company: j.company,
               score: j.score,
@@ -244,11 +232,11 @@ export default function App() {
       }
 
       if (newJobs.length > 0) {
-        await importJobsToAPI(newJobs)
+        await importJobsToDB(newJobs)
       }
 
       importStats.current = { inserted: newJobs.length, skipped, updated }
-      setJobs(await loadJobsFromAPI())
+      setJobs(await loadJobsFromDB())
       setImportResult(importStats.current)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed")
@@ -271,7 +259,7 @@ export default function App() {
       source: form.source || "Manual",
       status: form.status || "New",
     }
-    await saveJobToAPI(j)
+    await saveJobToDB(j)
     setJobs((prev) => [j, ...prev])
     setShowModal(false)
     setForm({ ...INITIAL_FORM })

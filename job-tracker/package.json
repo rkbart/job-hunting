@@ -5,8 +5,6 @@
   "type": "commonjs",
   "scripts": {
     "dev": "vite",
-    "dev:server": "node server.mjs",
-    "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
     "build": "npx vite build",
     "lint": "oxlint",
     "preview": "vite preview"
@@ -14,13 +12,11 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@types/papaparse": "^5.5.2",
-    "better-sqlite3": "^13.0.3",
-    "cors": "^2.8.6",
     "drizzle-orm": "^0.45.4",
-    "express": "^5.3.0",
     "papaparse": "^5.7.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "sqlocal": "^0.18.0",
     "tailwindcss": "^4.3.3",
     "vite-plugin-pwa": "^2.0.0"
   },
