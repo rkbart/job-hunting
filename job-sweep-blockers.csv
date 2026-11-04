@@ -12,3 +12,23 @@ date,site,reason
 2026-10-30,JobAssist,navigation timeout / possible block
 2026-10-30,Bossjob,forced on-site redirect; no remote filter honored; no software roles
 2026-10-30,WeWorkRemotely,Cloudflare 'Verify you are human' on job detail pages
+2026-11-03,LinkedIn,authwall/login required on jobs search
+2026-11-03,Indeed,Cloudflare 'Just a moment' bot detection wall on search results
+2026-11-03,OnlineJobs.ph,error page on job search
+2026-11-03,JobAssist,navigation timeout / possible block
+2026-11-03,Bossjob,forced on-site redirect; no remote filter honored
+2026-11-03,WeWorkRemotely,Cloudflare 'Just a moment' block
+2026-11-03,Mynimo,search URL pattern returns page does not exist
+2026-11-03,JobPinoy,domain parking page site does not exist
+2026-11-03,Workabroad.ph,404 on search URL
+2026-11-03,Freelancer.ph,freelance project bidding marketplace not salaried employment not useful
+2026-11-04,LinkedIn,authwall/login required on jobs search
+2026-11-04,Indeed,Cloudflare 'Just a moment' bot detection wall on search results
+2026-11-04,JobAssist,navigation timeout / possible block
+2026-11-04,Bossjob,forced on-site redirect; no remote filter honored; no software roles
+2026-11-04,WeWorkRemotely,Cloudflare 'Just a moment' block
+2026-11-04,RemoteOK,keyword not applied; returned generic list
+2026-11-04,Mynimo,search URL pattern returns page does not exist
+2026-11-04,JobPinoy,404 on search URL
+2026-11-04,Workabroad.ph,404 on search URL
+2026-11-04,Freelancer.ph,freelance project bidding marketplace not salaried employment not useful

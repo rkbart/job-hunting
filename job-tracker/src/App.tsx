@@ -158,8 +158,17 @@ export default function App() {
     setForm({ ...INITIAL_FORM })
   }
 
+  const dedupedJobs = useMemo(() => {
+    const seen = new Set<string>()
+    return jobs.filter((j) => {
+      if (seen.has(j.url)) return false
+      seen.add(j.url)
+      return true
+    })
+  }, [jobs])
+
   const filtered = useMemo(() => {
-    const list = jobs
+    const list = dedupedJobs
       .filter((j) => {
         if (tab === "All") return true
         if (tab === "Today") return j.date_found === today
@@ -167,7 +176,11 @@ export default function App() {
       })
       .filter((j) => (verdict === "all" ? true : j.verdict === verdict))
       .filter((j) => (sourceFilter === "all" ? true : j.source === sourceFilter))
-      .filter((j) => (q ? (j.title + j.company + j.reason).toLowerCase().includes(q.toLowerCase()) : true))
+      .filter((j) => {
+        if (!q) return true
+        const searchable = `${j.title} ${j.company} ${j.reason} ${j.url} ${j.source}`.toLowerCase()
+        return searchable.includes(q.toLowerCase())
+      })
     list.sort((a, b) => {
       let va: any, vb: any
       if (sortBy === "score") { va = Number(a.score); vb = Number(b.score) }
@@ -179,17 +192,17 @@ export default function App() {
       return 0
     })
     return list
-  }, [jobs, q, verdict, tab, sortBy, sortDir, sourceFilter])
+  }, [dedupedJobs, q, verdict, tab, sortBy, sortDir, sourceFilter])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { All: jobs.length }
-    c["Today"] = jobs.filter((j) => j.date_found === today).length
-    STATUSES.forEach((s) => { c[s] = jobs.filter((j) => j.status === s).length })
+    const c: Record<string, number> = { All: dedupedJobs.length }
+    c["Today"] = dedupedJobs.filter((j) => j.date_found === today).length
+    STATUSES.forEach((s) => { c[s] = dedupedJobs.filter((j) => j.status === s).length })
     return c
-  }, [jobs])
+  }, [dedupedJobs])
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-['SF Pro Text','system-ui','-apple-system',sans-serif]">
