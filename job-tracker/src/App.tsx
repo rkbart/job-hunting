@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import Papa from "papaparse"
+import { db, migrationsReady } from "./db/client"
+import { jobs, eq } from "./db/schema"
 
 type Job = {
   date_found: string
@@ -26,86 +28,6 @@ type ManualForm = {
   verdict: string
 }
 
-const STORAGE_KEY = "tracker-jobs"
-const API_BASE = import.meta.env.VITE_API_BASE || ""
-
-async function apiGet(path: string): Promise<any> {
-  const res = await fetch(`${API_BASE}${path}`)
-  if (!res.ok) throw new Error(`API ${path}: ${res.status}`)
-  return res.json()
-}
-
-async function apiPost(path: string, body: any): Promise<any> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) throw new Error(`API ${path}: ${res.status}`)
-  return res.json()
-}
-
-async function apiPut(path: string, body: any): Promise<any> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) throw new Error(`API ${path}: ${res.status}`)
-  return res.json()
-}
-
-async function loadJobsFromAPI(): Promise<Job[]> {
-  if (!API_BASE) return []
-  try {
-    const rows = await apiGet("/api/jobs")
-    return rows.map((r: any) => ({
-      date_found: r.date_found,
-      title: r.title,
-      company: r.company,
-      score: r.score,
-      verdict: r.verdict,
-      reason: r.reason,
-      url: r.url,
-      source: r.source,
-      status: r.status,
-      appliedDate: r.appliedDate ?? null,
-      interviewDate: r.interviewDate ?? null,
-    }))
-  } catch {
-    return []
-  }
-}
-
-async function saveJobToAPI(j: Job) {
-  if (!API_BASE) return
-  try {
-    await apiPost("/api/jobs", j)
-  } catch {
-    // ignore - may already exist
-  }
-}
-
-async function updateJobInAPI(url: string, patch: Partial<Job>) {
-  if (!API_BASE) return
-  try {
-    await apiPut(`/api/jobs/${encodeURIComponent(url)}`, patch)
-  } catch {
-    // ignore
-  }
-}
-
-async function importJobsToAPI(jobs: Job[]) {
-  if (!API_BASE) return
-  for (const j of jobs) {
-    try {
-      await apiPost("/api/jobs", j)
-    } catch {
-      // ignore duplicates
-    }
-  }
-}
-
 const INITIAL_FORM: ManualForm = {
   title: "",
   company: "",
@@ -121,8 +43,85 @@ const STATUSES = ["New", "Applied", "Interview", "Offer", "Rejected", "Set Aside
 const TABS = ["All", "Today", ...STATUSES]
 const PAGE_SIZE = 10
 
+function rowToJob(row: typeof jobs.$inferSelect): Job {
+  return {
+    date_found: row.dateFound,
+    title: row.title,
+    company: row.company,
+    score: row.score,
+    verdict: row.verdict,
+    reason: row.reason,
+    url: row.url,
+    source: row.source,
+    status: row.status,
+    appliedDate: row.appliedDate ?? null,
+    interviewDate: row.interviewDate ?? null,
+  }
+}
+
+async function loadJobsFromDB(): Promise<Job[]> {
+  const rows = await db.select().from(jobs)
+  return rows.map(rowToJob)
+}
+
+async function saveJobToDB(j: Job) {
+  await db.insert(jobs).values({
+    url: j.url,
+    title: j.title,
+    company: j.company,
+    score: j.score,
+    verdict: j.verdict,
+    reason: j.reason,
+    source: j.source,
+    status: j.status,
+    dateFound: j.date_found,
+    appliedDate: j.appliedDate ?? null,
+    interviewDate: j.interviewDate ?? null,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  }).onConflictDoNothing()
+}
+
+async function updateJobInDB(url: string, patch: Partial<Job>) {
+  const values: Record<string, any> = { updatedAt: Date.now() }
+  if (patch.status !== undefined) values.status = patch.status
+  if (patch.appliedDate !== undefined) values.appliedDate = patch.appliedDate ?? null
+  if (patch.interviewDate !== undefined) values.interviewDate = patch.interviewDate ?? null
+  if (patch.title !== undefined) values.title = patch.title
+  if (patch.company !== undefined) values.company = patch.company
+  if (patch.score !== undefined) values.score = patch.score
+  if (patch.verdict !== undefined) values.verdict = patch.verdict
+  if (patch.reason !== undefined) values.reason = patch.reason
+  if (patch.source !== undefined) values.source = patch.source
+  if (patch.date_found !== undefined) values.dateFound = patch.date_found
+
+  await db.update(jobs).set(values).where(eq(jobs.url, url))
+}
+
+async function importJobsToDB(jobsList: Job[]) {
+  const now = Date.now()
+  for (const j of jobsList) {
+    await db.insert(jobs).values({
+      url: j.url,
+      title: j.title,
+      company: j.company,
+      score: j.score,
+      verdict: j.verdict,
+      reason: j.reason,
+      source: j.source,
+      status: j.status,
+      dateFound: j.date_found,
+      appliedDate: j.appliedDate ?? null,
+      interviewDate: j.interviewDate ?? null,
+      createdAt: now,
+      updatedAt: now,
+    }).onConflictDoNothing()
+  }
+}
+
 export default function App() {
-  const [jobs, setJobs] = useState<Job[]>([])
+  const [jobsState, setJobs] = useState<Job[]>([])
+  const [loaded, setLoaded] = useState(false)
   const [q, setQ] = useState("")
   const [verdict, setVerdict] = useState("all")
   const [sourceFilter, setSourceFilter] = useState("all")
@@ -141,37 +140,19 @@ export default function App() {
   useEffect(() => {
     let mounted = true
     ;(async () => {
-      const apiJobs = await loadJobsFromAPI()
+      await migrationsReady
       if (!mounted) return
-      if (apiJobs.length > 0) {
-        setJobs(apiJobs)
-      } else {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY)
-          if (raw) {
-            const parsed = JSON.parse(raw) as Job[]
-            const seen = new Set<string>()
-            const deduped = parsed.filter((j) => {
-              if (seen.has(j.url)) return false
-              seen.add(j.url)
-              return true
-            })
-            setJobs(deduped)
-          }
-        } catch {
-          setError("Failed to load saved jobs")
-        }
+      try {
+        const rows = await loadJobsFromDB()
+        setJobs(rows)
+        setLoaded(true)
+      } catch {
+        setError("Failed to load saved jobs")
+        setLoaded(true)
       }
     })()
     return () => { mounted = false }
   }, [])
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs))
-    ;(async () => {
-      await importJobsToAPI(jobs)
-    })()
-  }, [jobs])
 
   useEffect(() => {
     setPage(1)
@@ -185,31 +166,27 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey)
   }, [])
 
-  const handleStatusChange = (job: Job, status: string) => {
+  const handleStatusChange = async (job: Job, status: string) => {
     const now = new Date().toISOString().slice(0, 10)
     const patch: Partial<Job> = {
       status,
       appliedDate: status === "Applied" && !job.appliedDate ? now : job.appliedDate ?? null,
       interviewDate: status === "Interview" && !job.interviewDate ? now : job.interviewDate ?? null,
     }
+    await updateJobInDB(job.url, patch)
     setJobs((prev) =>
       prev.map((j) =>
         j.url === job.url ? { ...j, ...patch } : j
       )
     )
-    ;(async () => {
-      await updateJobInAPI(job.url, patch)
-    })()
   }
 
-  const handleDateChange = (job: Job, field: "appliedDate" | "interviewDate", value: string) => {
+  const handleDateChange = async (job: Job, field: "appliedDate" | "interviewDate", value: string) => {
     const patch: Partial<Job> = { [field]: value || null }
+    await updateJobInDB(job.url, patch)
     setJobs((prev) =>
       prev.map((j) => (j.url === job.url ? { ...j, [field]: value || null } : j))
     )
-    ;(async () => {
-      await updateJobInAPI(job.url, patch)
-    })()
   }
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,45 +204,38 @@ export default function App() {
       })
       const parsed = Papa.parse<Job>(text, { header: true, skipEmptyLines: true })
 
-      // Dedupe against the latest state (not the render-time closure) so
-      // consecutive imports always compare against what's already saved.
-      setJobs((prev) => {
-        const byUrl = new Map<string, Job>()
-        for (const j of prev) byUrl.set(j.url, j)
+      const existingUrls = new Set(jobsState.map((j) => j.url))
+      const newJobs: Job[] = []
+      let skipped = 0
+      let updated = 0
 
-        const newJobs: Job[] = []
-        let skipped = 0
-        let updated = 0
-
-        for (const j of parsed.data) {
-          if (!j.url) { skipped++; continue }
-          const existing = byUrl.get(j.url)
-          if (existing) {
-            skipped++
-            // If the existing entry has been acted upon (not "New"),
-            // refresh its fields but preserve status and date fields.
-            if (existing.status !== "New") {
-              byUrl.set(j.url, {
-                ...existing,
-                ...j,
-                status: existing.status,
-                appliedDate: existing.appliedDate,
-                interviewDate: existing.interviewDate,
-              })
-              updated++
-            }
-          } else {
-            newJobs.push(j)
+      for (const j of parsed.data) {
+        if (!j.url) { skipped++; continue }
+        if (existingUrls.has(j.url)) {
+          skipped++
+          if (j.status !== "New") {
+            await updateJobInDB(j.url, {
+              title: j.title,
+              company: j.company,
+              score: j.score,
+              verdict: j.verdict,
+              reason: j.reason,
+              source: j.source,
+              date_found: j.date_found,
+            })
+            updated++
           }
+        } else {
+          newJobs.push(j)
         }
+      }
 
-        importStats.current = { inserted: newJobs.length, skipped, updated }
-        ;(async () => {
-          await importJobsToAPI([...newJobs, ...Array.from(byUrl.values())])
-        })()
-        return [...newJobs, ...Array.from(byUrl.values())]
-      })
+      if (newJobs.length > 0) {
+        await importJobsToDB(newJobs)
+      }
 
+      importStats.current = { inserted: newJobs.length, skipped, updated }
+      setJobs(await loadJobsFromDB())
       setImportResult(importStats.current)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed")
@@ -274,41 +244,30 @@ export default function App() {
     }
   }
 
-  const addManual = () => {
+  const addManual = async () => {
     if (!form.title || !form.url) return
-    setJobs((prev) => {
-      if (prev.some((j) => j.url === form.url)) return prev
-      const j: Job = {
-        date_found: new Date().toISOString().slice(0, 10),
-        title: form.title,
-        company: form.company || "",
-        score: form.score || "50",
-        verdict: form.verdict || "maybe",
-        reason: form.reason || "",
-        url: form.url,
-        source: form.source || "Manual",
-        status: form.status || "New",
-      }
-      ;(async () => {
-        await saveJobToAPI(j)
-      })()
-      return [j, ...prev]
-    })
+    const existing = jobsState.find((j) => j.url === form.url)
+    if (existing) return
+
+    const j: Job = {
+      date_found: new Date().toISOString().slice(0, 10),
+      title: form.title,
+      company: form.company || "",
+      score: form.score || "50",
+      verdict: form.verdict || "maybe",
+      reason: form.reason || "",
+      url: form.url,
+      source: form.source || "Manual",
+      status: form.status || "New",
+    }
+    await saveJobToDB(j)
+    setJobs((prev) => [j, ...prev])
     setShowModal(false)
     setForm({ ...INITIAL_FORM })
   }
 
-  const dedupedJobs = useMemo(() => {
-    const seen = new Set<string>()
-    return jobs.filter((j) => {
-      if (seen.has(j.url)) return false
-      seen.add(j.url)
-      return true
-    })
-  }, [jobs])
-
   const filtered = useMemo(() => {
-    const list = dedupedJobs
+    const list = jobsState
       .filter((j) => {
         if (tab === "All") return true
         if (tab === "Today") return j.date_found === today
@@ -332,17 +291,25 @@ export default function App() {
       return 0
     })
     return list
-  }, [dedupedJobs, q, verdict, tab, sortBy, sortDir, sourceFilter])
+  }, [jobsState, q, verdict, tab, sortBy, sortDir, sourceFilter])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { All: dedupedJobs.length }
-    c["Today"] = dedupedJobs.filter((j) => j.date_found === today).length
-    STATUSES.forEach((s) => { c[s] = dedupedJobs.filter((j) => j.status === s).length })
+    const c: Record<string, number> = { All: jobsState.length }
+    c["Today"] = jobsState.filter((j) => j.date_found === today).length
+    STATUSES.forEach((s) => { c[s] = jobsState.filter((j) => j.status === s).length })
     return c
-  }, [dedupedJobs])
+  }, [jobsState])
+
+  if (!loaded) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+        <p className="text-[#1d1d1f] text-[17px]">Loading database…</p>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-['SF Pro Text','system-ui','-apple-system',sans-serif]">
@@ -352,7 +319,7 @@ export default function App() {
             <h1 className="text-4xl font-semibold tracking-tight" style={{ letterSpacing: "-0.28px" }}>
               Job Sweep Tracker
             </h1>
-            <p className="text-[#7a7a7a] mt-2 text-[17px]">Ranked shortlist — {jobs.length} roles</p>
+            <p className="text-[#7a7a7a] mt-2 text-[17px]">Ranked shortlist — {jobsState.length} roles</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -584,7 +551,7 @@ export default function App() {
             </div>
           </div>
         </div>
-      )}
+      )
     </div>
   )
 }

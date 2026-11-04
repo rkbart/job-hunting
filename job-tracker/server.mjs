@@ -1,13 +1,13 @@
-const express = require("express")
-const cors = require("cors")
-const Database = require("better-sqlite3")
-const path = require("path")
-const fs = require("fs")
+import express from "express"
+import cors from "cors"
+import Database from "better-sqlite3"
+import path from "path"
+import fs from "fs"
 
 const app = express()
 const PORT = process.env.PORT || 4000
 
-const DB_DIR = path.join(__dirname, "data")
+const DB_DIR = path.join(process.cwd(), "data")
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true })
 const dbPath = path.join(DB_DIR, "jobs.db")
 const db = new Database(dbPath)
