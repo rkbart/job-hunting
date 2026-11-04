@@ -21,7 +21,6 @@
     "papaparse": "^5.7.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "sqlocal": "^0.18.0",
     "tailwindcss": "^4.3.3",
     "vite-plugin-pwa": "^2.0.0"
   },

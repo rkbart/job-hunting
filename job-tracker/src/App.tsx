@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import Papa from "papaparse"
-import { db, migrationsReady } from "./db/client"
-import { jobs, eq } from "./db/schema"
 
 type Job = {
   date_found: string
@@ -42,8 +40,9 @@ const INITIAL_FORM: ManualForm = {
 const STATUSES = ["New", "Applied", "Interview", "Offer", "Rejected", "Set Aside"]
 const TABS = ["All", "Today", ...STATUSES]
 const PAGE_SIZE = 10
+const API_BASE = import.meta.env.VITE_API_BASE || ""
 
-function rowToJob(row: typeof jobs.$inferSelect): Job {
+function rowToJob(row: any): Job {
   return {
     date_found: row.dateFound,
     title: row.title,
@@ -59,49 +58,19 @@ function rowToJob(row: typeof jobs.$inferSelect): Job {
   }
 }
 
-async function loadJobsFromDB(): Promise<Job[]> {
-  const rows = await db.select().from(jobs)
+async function loadJobsFromAPI(): Promise<Job[]> {
+  const res = await fetch(API_BASE + "/api/jobs")
+  const rows = await res.json()
   return rows.map(rowToJob)
 }
 
-async function saveJobToDB(j: Job) {
-  await db.insert(jobs).values({
-    url: j.url,
-    title: j.title,
-    company: j.company,
-    score: j.score,
-    verdict: j.verdict,
-    reason: j.reason,
-    source: j.source,
-    status: j.status,
-    dateFound: j.date_found,
-    appliedDate: j.appliedDate ?? null,
-    interviewDate: j.interviewDate ?? null,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  }).onConflictDoNothing()
-}
-
-async function updateJobInDB(url: string, patch: Partial<Job>) {
-  const values: Record<string, any> = { updatedAt: Date.now() }
-  if (patch.status !== undefined) values.status = patch.status
-  if (patch.appliedDate !== undefined) values.appliedDate = patch.appliedDate ?? null
-  if (patch.interviewDate !== undefined) values.interviewDate = patch.interviewDate ?? null
-  if (patch.title !== undefined) values.title = patch.title
-  if (patch.company !== undefined) values.company = patch.company
-  if (patch.score !== undefined) values.score = patch.score
-  if (patch.verdict !== undefined) values.verdict = patch.verdict
-  if (patch.reason !== undefined) values.reason = patch.reason
-  if (patch.source !== undefined) values.source = patch.source
-  if (patch.date_found !== undefined) values.dateFound = patch.date_found
-
-  await db.update(jobs).set(values).where(eq(jobs.url, url))
-}
-
-async function importJobsToDB(jobsList: Job[]) {
-  const now = Date.now()
-  for (const j of jobsList) {
-    await db.insert(jobs).values({
+async function saveJobToAPI(j: Job) {
+  await fetch(API_BASE + "/api/jobs", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
       url: j.url,
       title: j.title,
       company: j.company,
@@ -110,12 +79,58 @@ async function importJobsToDB(jobsList: Job[]) {
       reason: j.reason,
       source: j.source,
       status: j.status,
-      dateFound: j.date_found,
+      date_found: j.date_found,
       appliedDate: j.appliedDate ?? null,
       interviewDate: j.interviewDate ?? null,
-      createdAt: now,
-      updatedAt: now,
-    }).onConflictDoNothing()
+    }),
+  })
+}
+
+async function updateJobInAPI(url: string, patch: Partial<Job>) {
+  await fetch(API_BASE + `/api/jobs/${url}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      status: patch.status,
+      appliedDate: patch.appliedDate ?? null,
+      interviewDate: patch.interviewDate ?? null,
+      title: patch.title,
+      company: patch.company,
+      score: patch.score,
+      verdict: patch.verdict,
+      reason: patch.reason,
+      source: patch.source,
+      date_found: patch.date_found,
+    }),
+  })
+}
+
+async function importJobsToAPI(jobsList: Job[]) {
+  const now = Date.now()
+  for (const j of jobsList) {
+    await fetch(API_BASE + "/api/jobs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url: j.url,
+        title: j.title,
+        company: j.company,
+        score: j.score,
+        verdict: j.verdict,
+        reason: j.reason,
+        source: j.source,
+        status: j.status,
+        date_found: j.date_found,
+        appliedDate: j.appliedDate ?? null,
+        interviewDate: j.interviewDate ?? null,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    })
   }
 }
 
@@ -140,10 +155,8 @@ export default function App() {
   useEffect(() => {
     let mounted = true
     ;(async () => {
-      await migrationsReady
-      if (!mounted) return
       try {
-        const rows = await loadJobsFromDB()
+        const rows = await loadJobsFromAPI()
         setJobs(rows)
         setLoaded(true)
       } catch {
@@ -173,7 +186,7 @@ export default function App() {
       appliedDate: status === "Applied" && !job.appliedDate ? now : job.appliedDate ?? null,
       interviewDate: status === "Interview" && !job.interviewDate ? now : job.interviewDate ?? null,
     }
-    await updateJobInDB(job.url, patch)
+    await updateJobInAPI(job.url, patch)
     setJobs((prev) =>
       prev.map((j) =>
         j.url === job.url ? { ...j, ...patch } : j
@@ -183,7 +196,7 @@ export default function App() {
 
   const handleDateChange = async (job: Job, field: "appliedDate" | "interviewDate", value: string) => {
     const patch: Partial<Job> = { [field]: value || null }
-    await updateJobInDB(job.url, patch)
+    await updateJobInAPI(job.url, patch)
     setJobs((prev) =>
       prev.map((j) => (j.url === job.url ? { ...j, [field]: value || null } : j))
     )
@@ -214,7 +227,7 @@ export default function App() {
         if (existingUrls.has(j.url)) {
           skipped++
           if (j.status !== "New") {
-            await updateJobInDB(j.url, {
+            await updateJobInAPI(j.url, {
               title: j.title,
               company: j.company,
               score: j.score,
@@ -231,11 +244,11 @@ export default function App() {
       }
 
       if (newJobs.length > 0) {
-        await importJobsToDB(newJobs)
+        await importJobsToAPI(newJobs)
       }
 
       importStats.current = { inserted: newJobs.length, skipped, updated }
-      setJobs(await loadJobsFromDB())
+      setJobs(await loadJobsFromAPI())
       setImportResult(importStats.current)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed")
@@ -246,8 +259,6 @@ export default function App() {
 
   const addManual = async () => {
     if (!form.title || !form.url) return
-    const existing = jobsState.find((j) => j.url === form.url)
-    if (existing) return
 
     const j: Job = {
       date_found: new Date().toISOString().slice(0, 10),
@@ -260,7 +271,7 @@ export default function App() {
       source: form.source || "Manual",
       status: form.status || "New",
     }
-    await saveJobToDB(j)
+    await saveJobToAPI(j)
     setJobs((prev) => [j, ...prev])
     setShowModal(false)
     setForm({ ...INITIAL_FORM })
@@ -348,18 +359,6 @@ export default function App() {
 
         {error && <p className="text-red-600 text-[17px] mb-4">{error}</p>}
 
-        <div className="flex gap-2 mb-4 flex-wrap">
-          {TABS.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-1.5 rounded-lg text-sm border transition ${tab === t ? "bg-[#0066cc] border-[#0066cc] text-white" : "bg-white border-[#e0e0e0] text-[#1d1d1f] hover:border-[#0066cc]"}`}
-            >
-              {t} <span className="opacity-70 ml-1">{counts[t]}</span>
-            </button>
-          ))}
-        </div>
-
         <div className="flex flex-col md:flex-row gap-3 mb-6">
           <input
             className="flex-1 px-5 py-2.5 rounded-lg bg-white border border-[#e0e0e0] focus:outline-none focus:ring-2 focus:ring-[#0071e3] text-[17px]"
@@ -431,7 +430,7 @@ export default function App() {
                     {j.appliedDate && <span>Applied: {j.appliedDate}</span>}
                     {j.interviewDate && <span>Interview: {j.interviewDate}</span>}
                   </div>
-                  <div className="mt-2 flex gap-3">
+                  <div className="flex gap-3 mt-2">
                     <div>
                       <label className="text-[12px] text-[#7a7a7a] block mb-1">Applied date</label>
                       <input
@@ -496,62 +495,6 @@ export default function App() {
           </button>
         </div>
       </div>
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[8px] p-6 w-full max-w-lg space-y-3">
-            <h2 className="text-[21px] font-semibold">Add manual job</h2>
-            {(
-              [
-              "title",
-              "company",
-              "url",
-              "source",
-              "score",
-              "reason",
-            ] as const).map((f) => (
-              <label key={f} className="block">
-                <span className="text-[12px] text-[#7a7a7a] capitalize">{f}</span>
-                <input
-                  className="w-full px-4 py-2 rounded-[8px] border border-[#e0e0e0] text-[17px]"
-                  placeholder={f}
-                  value={form[f]}
-                  onChange={(e) => setForm({ ...form, [f]: e.target.value })}
-                />
-              </label>
-            ))}
-            <div className="flex gap-3">
-              <select
-                className="flex-1 px-4 py-2 rounded-[8px] border border-[#e0e0e0]"
-                value={form.verdict}
-                onChange={(e) => setForm({ ...form, verdict: e.target.value })}
-              >
-                <option value="apply">apply</option>
-                <option value="maybe">maybe</option>
-              </select>
-              <select
-                className="flex-1 px-4 py-2 rounded-[8px] border border-[#e0e0e0]"
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg border border-[#e0e0e0]">
-                Cancel
-              </button>
-              <button onClick={addManual} className="px-4 py-2 rounded-lg bg-[#0066cc] text-white">
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )
     </div>
   )
 }
