@@ -336,6 +336,12 @@ export default function App() {
               {importing ? "Importing…" : "Import CSV"}
               <input type="file" accept=".csv" className="hidden" disabled={importing} onChange={handleImportCsv} />
             </label>
+            <button
+              onClick={() => exportJobsToCSV(filtered)}
+              className={`px-5 py-2.5 rounded-lg text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#0066cc] text-white hover:bg-[#0071e3]"}`}
+            >
+              Export CSV
+            </button>
           </div>
         </header>
 
