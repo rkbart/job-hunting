@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 data/
+
+# Environment
+.env
+.env.local

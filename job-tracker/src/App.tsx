@@ -27,6 +27,84 @@ type ManualForm = {
 }
 
 const STORAGE_KEY = "tracker-jobs"
+const API_BASE = import.meta.env.VITE_API_BASE || ""
+
+async function apiGet(path: string): Promise<any> {
+  const res = await fetch(`${API_BASE}${path}`)
+  if (!res.ok) throw new Error(`API ${path}: ${res.status}`)
+  return res.json()
+}
+
+async function apiPost(path: string, body: any): Promise<any> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`API ${path}: ${res.status}`)
+  return res.json()
+}
+
+async function apiPut(path: string, body: any): Promise<any> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`API ${path}: ${res.status}`)
+  return res.json()
+}
+
+async function loadJobsFromAPI(): Promise<Job[]> {
+  if (!API_BASE) return []
+  try {
+    const rows = await apiGet("/api/jobs")
+    return rows.map((r: any) => ({
+      date_found: r.date_found,
+      title: r.title,
+      company: r.company,
+      score: r.score,
+      verdict: r.verdict,
+      reason: r.reason,
+      url: r.url,
+      source: r.source,
+      status: r.status,
+      appliedDate: r.appliedDate ?? null,
+      interviewDate: r.interviewDate ?? null,
+    }))
+  } catch {
+    return []
+  }
+}
+
+async function saveJobToAPI(j: Job) {
+  if (!API_BASE) return
+  try {
+    await apiPost("/api/jobs", j)
+  } catch {
+    // ignore - may already exist
+  }
+}
+
+async function updateJobInAPI(url: string, patch: Partial<Job>) {
+  if (!API_BASE) return
+  try {
+    await apiPut(`/api/jobs/${encodeURIComponent(url)}`, patch)
+  } catch {
+    // ignore
+  }
+}
+
+async function importJobsToAPI(jobs: Job[]) {
+  if (!API_BASE) return
+  for (const j of jobs) {
+    try {
+      await apiPost("/api/jobs", j)
+    } catch {
+      // ignore duplicates
+    }
+  }
+}
 
 const INITIAL_FORM: ManualForm = {
   title: "",
@@ -61,25 +139,38 @@ export default function App() {
   const [form, setForm] = useState<ManualForm>({ ...INITIAL_FORM })
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw) as Job[]
-        const seen = new Set<string>()
-        const deduped = parsed.filter((j) => {
-          if (seen.has(j.url)) return false
-          seen.add(j.url)
-          return true
-        })
-        setJobs(deduped)
+    let mounted = true
+    ;(async () => {
+      const apiJobs = await loadJobsFromAPI()
+      if (!mounted) return
+      if (apiJobs.length > 0) {
+        setJobs(apiJobs)
+      } else {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY)
+          if (raw) {
+            const parsed = JSON.parse(raw) as Job[]
+            const seen = new Set<string>()
+            const deduped = parsed.filter((j) => {
+              if (seen.has(j.url)) return false
+              seen.add(j.url)
+              return true
+            })
+            setJobs(deduped)
+          }
+        } catch {
+          setError("Failed to load saved jobs")
+        }
       }
-    } catch {
-      setError("Failed to load saved jobs")
-    }
+    })()
+    return () => { mounted = false }
   }, [])
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs))
+    ;(async () => {
+      await importJobsToAPI(jobs)
+    })()
   }, [jobs])
 
   useEffect(() => {
@@ -96,24 +187,29 @@ export default function App() {
 
   const handleStatusChange = (job: Job, status: string) => {
     const now = new Date().toISOString().slice(0, 10)
+    const patch: Partial<Job> = {
+      status,
+      appliedDate: status === "Applied" && !job.appliedDate ? now : job.appliedDate ?? null,
+      interviewDate: status === "Interview" && !job.interviewDate ? now : job.interviewDate ?? null,
+    }
     setJobs((prev) =>
       prev.map((j) =>
-        j.url === job.url
-          ? {
-              ...j,
-              status,
-              appliedDate: status === "Applied" && !j.appliedDate ? now : j.appliedDate ?? null,
-              interviewDate: status === "Interview" && !j.interviewDate ? now : j.interviewDate ?? null,
-            }
-          : j
+        j.url === job.url ? { ...j, ...patch } : j
       )
     )
+    ;(async () => {
+      await updateJobInAPI(job.url, patch)
+    })()
   }
 
   const handleDateChange = (job: Job, field: "appliedDate" | "interviewDate", value: string) => {
+    const patch: Partial<Job> = { [field]: value || null }
     setJobs((prev) =>
       prev.map((j) => (j.url === job.url ? { ...j, [field]: value || null } : j))
     )
+    ;(async () => {
+      await updateJobInAPI(job.url, patch)
+    })()
   }
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,6 +260,9 @@ export default function App() {
         }
 
         importStats.current = { inserted: newJobs.length, skipped, updated }
+        ;(async () => {
+          await importJobsToAPI([...newJobs, ...Array.from(byUrl.values())])
+        })()
         return [...newJobs, ...Array.from(byUrl.values())]
       })
 
@@ -190,6 +289,9 @@ export default function App() {
         source: form.source || "Manual",
         status: form.status || "New",
       }
+      ;(async () => {
+        await saveJobToAPI(j)
+      })()
       return [j, ...prev]
     })
     setShowModal(false)
