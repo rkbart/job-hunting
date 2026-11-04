@@ -46,7 +46,7 @@ const PAGE_SIZE = 10
 
 function rowToJob(row: typeof jobs.$inferSelect): Job {
   return {
-    date_found: row.dateFound,
+    date_found: normalizeDate(row.dateFound) || new Date().toISOString().slice(0, 10),
     title: row.title,
     company: row.company,
     score: row.score,
