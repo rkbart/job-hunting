@@ -44,6 +44,12 @@ const STATUSES = ["New", "Applied", "Interview", "Offer", "Rejected", "Set Aside
 const TABS = ["All", "Today", ...STATUSES]
 const PAGE_SIZE = 10
 
+function normalizeDate(value: string | null | undefined): string | null {
+  if (!value) return null
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
+}
+
 function rowToJob(row: typeof jobs.$inferSelect): Job {
   return {
     date_found: normalizeDate(row.dateFound) || new Date().toISOString().slice(0, 10),
