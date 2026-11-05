@@ -457,6 +457,18 @@ export default function App() {
 
         {error && <p className="text-red-600 text-[17px] mb-4">{error}</p>}
 
+        <div className="flex flex-wrap gap-2 mb-6">
+          {TABS.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-1.5 rounded-lg text-[16px] transition ${tab === t ? "bg-[#0066cc] text-white" : "bg-white border border-[#e0e0e0] text-[#1d1d1f] hover:bg-[#f5f5f7]"}`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
         <div className="flex flex-col md:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <input
