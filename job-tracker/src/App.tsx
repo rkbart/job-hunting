@@ -120,6 +120,27 @@ async function importJobsToDB(jobsList: Job[]) {
   }
 }
 
+// Export all jobs from the database to a CSV file for download
+async function exportAllJobsToCSV() {
+  const allJobs = await loadJobsFromDB()
+  const headers = ['url', 'title', 'company', 'score', 'verdict', 'reason', 'source', 'status', 'date_found', 'appliedDate', 'interviewDate', 'importBatch', 'importedAt']
+  const rows = allJobs.map(j => [
+    j.url, j.title, j.company, j.score, j.verdict, j.reason, j.source, j.status,
+    j.date_found, j.appliedDate ?? '', j.interviewDate ?? '', j.importBatch ?? '', j.importedAt ?? ''
+  ])
+  const bodyRows = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','))
+  const csv = [headers.join(','), ...bodyRows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.setAttribute('href', url)
+  a.setAttribute('download', `job-tracker-export-all-${new Date().toISOString().slice(0, 10)}.csv`)
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 export default function App() {
   const [jobsState, setJobs] = useState<Job[]>([])
   const [loaded, setLoaded] = useState(false)
@@ -141,6 +162,7 @@ export default function App() {
   const [showErrorToast, setShowErrorToast] = useState(false)
   const errorMessage = useRef<string | null>(null)
   const [uniqueSources, setUniqueSources] = useState<string[]>([])
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null)
   const importStats = useRef<{ inserted: number; skipped: number; updated: number }>({ inserted: 0, skipped: 0, updated: 0 })
   const [form, setForm] = useState<ManualForm>({ ...INITIAL_FORM })
 
@@ -164,6 +186,12 @@ export default function App() {
   useEffect(() => {
     setPage(1)
   }, [q, verdict, tab, sourceFilter])
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {}
+    , 300)
+    return () => clearTimeout(timeoutId)
+  }, [q])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -340,7 +368,7 @@ export default function App() {
               className={`px-5 py-2.5 rounded-lg text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#0066cc] text-white hover:bg-[#0071e3]"}`}
             >
               {importing ? "Importing…" : "Import CSV"}
-              <input type="file" accept=".csv" className="hidden" disabled={importing} onChange={handleImportCsv} />
+              <input type="file" accept=".csv" className="hidden" disabled={importing} onChange={handleImport} />
             </label>
             <button
               onClick={() => exportJobsToCSV(filtered)}
@@ -367,8 +395,11 @@ export default function App() {
             className="flex-1 px-5 py-2.5 rounded-lg bg-white border border-[#e0e0e0] focus:outline-none focus:ring-2 focus:ring-[#0071e3] text-[17px]"
             placeholder="Search title, company, reason..."
             value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+          onChange={(e) => {
+            setQ(e.target.value)
+            if (debounceTimer.current) clearTimeout(debounceTimer.current)
+            debounceTimer.current = setTimeout(() => setQ(e.target.value), 300)
+          }}          />
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[15px] text-[#7a7a7a] hover:text-[#1d1d1f] cursor-pointer transition" onClick={() => { setQ("") } } aria-label="Clear search">×</span>
           <select
             className="px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px]"
