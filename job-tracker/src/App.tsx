@@ -522,7 +522,7 @@ export default function App() {
           <p className="text-[#757575] text-[17px]">No jobs match. Try importing a CSV or adding manually.</p>
         )}
 
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {paged.map((j) => (
             <div key={j.url} className="rounded-none bg-white border border-[#e0e0e0] p-4 md:p-6">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
