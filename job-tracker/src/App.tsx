@@ -126,9 +126,9 @@ async function importJobsToDB(jobsList: Job[]) {
   }
 }
 
-// Export all jobs from the database to a CSV file for download
-async function exportAllJobsToCSV() {
-  const allJobs = await loadJobsFromDB()
+// Export jobs from the database to a CSV file for download
+async function exportJobsToCSV(jobsList?: Job[]) {
+  const allJobs = jobsList ?? (await loadJobsFromDB())
   const headers = ['url', 'title', 'company', 'score', 'verdict', 'reason', 'source', 'status', 'date_found', 'appliedDate', 'interviewDate', 'importBatch', 'importedAt']
   const rows = allJobs.map(j => [
     j.url, j.title, j.company, j.score, j.verdict, j.reason, j.source, j.status,
