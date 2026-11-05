@@ -105,6 +105,10 @@ async function updateJobInDB(url: string, patch: Partial<Job>) {
   await db.update(jobs).set(values).where(eq(jobs.url, url))
 }
 
+async function deleteJob(url: string) {
+  await db.delete(jobs).where(eq(jobs.url, url))
+}
+
 async function importJobsToDB(jobsList: Job[]) {
   const now = new Date()
   for (const j of jobsList) {
@@ -171,6 +175,9 @@ export default function App() {
   const debounceTimer = useRef<NodeJS.Timeout | null>(null)
   const importStats = useRef<{ inserted: number; skipped: number; updated: number }>({ inserted: 0, skipped: 0, updated: 0 })
   const [form, setForm] = useState<ManualForm>({ ...INITIAL_FORM })
+  const [editJob, setEditJob] = useState<Job | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState<ManualForm>({ ...INITIAL_FORM })
 
   useEffect(() => {
     let mounted = true
@@ -201,7 +208,10 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowModal(false)
+      if (e.key === "Escape") {
+        setShowModal(false)
+        setShowEditModal(false)
+      }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
@@ -220,6 +230,47 @@ export default function App() {
         j.url === job.url ? { ...j, ...patch } : j
       )
     )
+  }
+
+  const handleDelete = async (url: string) => {
+    if (!confirm("Delete this job?")) return
+    await deleteJob(url)
+    setJobs((prev) => prev.filter((j) => j.url !== url))
+  }
+
+  const openEditModal = (job: Job) => {
+    setEditJob(job)
+    setEditForm({
+      title: job.title,
+      company: job.company,
+      url: job.url,
+      source: job.source,
+      score: job.score,
+      reason: job.reason,
+      status: job.status,
+      verdict: job.verdict,
+    })
+    setShowEditModal(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editJob || !editForm.title || !editForm.url) return
+    const now = new Date().toISOString().slice(0, 10)
+    await updateJobInDB(editJob.url, {
+      title: editForm.title,
+      company: editForm.company,
+      score: editForm.score,
+      verdict: editForm.verdict,
+      reason: editForm.reason,
+      source: editForm.source,
+      status: editForm.status,
+      date_found: now,
+    })
+    setJobs((prev) =>
+      prev.map((j) => (j.url === editJob.url ? { ...j, ...editForm, date_found: now } : j))
+    )
+    setShowEditModal(false)
+    setEditJob(null)
   }
 
   const handleDateChange = async (job: Job, field: "appliedDate" | "interviewDate", value: string) => {
@@ -501,14 +552,28 @@ export default function App() {
                       </option>
                     ))}
                   </select>
-                  <a
-                    href={j.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-4 py-1.5 rounded-lg bg-[#0066cc] hover:bg-[#0071e3] text-white text-[14px] text-center"
-                  >
-                    Open ↗
-                  </a>
+                  <div className="flex gap-1 mt-1">
+                    <button
+                      onClick={() => openEditModal(j)}
+                      className="px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px] text-[#0066cc] hover:bg-[#f5f5f7]"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(j.url)}
+                      className="px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px] text-[#d32f2f] hover:bg-[#fdecea]"
+                    >
+                      Delete
+                    </button>
+                    <a
+                      href={j.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-1.5 rounded-lg bg-[#0066cc] hover:bg-[#0071e3] text-white text-[14px] text-center"
+                    >
+                      Open ↗
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -532,6 +597,110 @@ export default function App() {
             Next
           </button>
         </div>
+
+        {showEditModal && editJob && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-[8px] p-6 max-w-md w-full mx-4 shadow-xl">
+              <h2 className="text-xl font-semibold mb-4">Edit Job</h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Title</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    value={editForm.title}
+                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Company</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    value={editForm.company}
+                    onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Score</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      value={editForm.score}
+                      onChange={(e) => setEditForm({ ...editForm, score: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Source</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      value={editForm.source}
+                      onChange={(e) => setEditForm({ ...editForm, source: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Verdict</label>
+                  <select
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    value={editForm.verdict}
+                    onChange={(e) => setEditForm({ ...editForm, verdict: e.target.value })}
+                  >
+                    <option value="apply">Apply</option>
+                    <option value="maybe">Maybe</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Status</label>
+                  <select
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                  >
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Reason</label>
+                  <textarea
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    value={editForm.reason}
+                    onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] text-[#7a7a7a] mb-1">URL</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    value={editForm.url}
+                    onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-6 justify-end">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[#7a7a7a] hover:bg-[#f5f5f7]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="px-4 py-1.5 rounded-lg bg-[#0066cc] text-white hover:bg-[#0071e3]"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
