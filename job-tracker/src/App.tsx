@@ -403,30 +403,30 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-['SF Pro Text','system-ui','-apple-system',sans-serif]">
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-4 py-6 md:px-6 md:py-10">
         <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-semibold tracking-tight" style={{ letterSpacing: "-0.28px" }}>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight" style={{ letterSpacing: "-0.28px" }}>
               Job Sweep Tracker
             </h1>
-            <p className="text-[#7a7a7a] mt-2 text-[17px]">Ranked shortlist — {jobsState.length} roles</p>
+            <p className="text-[#7a7a7a] mt-2 text-[16px] md:text-[17px]">Ranked shortlist — {jobsState.length} roles</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowModal(true)}
-              className="px-5 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px] hover:border-[#0066cc] transition"
+              className="px-4 py-2 md:px-5 md:py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[16px] md:text-[17px] hover:border-[#0066cc] transition"
             >
               + Add manual
             </button>
             <label
-              className={`px-5 py-2.5 rounded-lg text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#0066cc] text-white hover:bg-[#0071e3]"}`}
+              className={`px-4 py-2 md:px-5 md:py-2.5 rounded-lg text-[16px] md:text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#0066cc] text-white hover:bg-[#0071e3]"}`}
             >
               {importing ? "Importing…" : "Import CSV"}
               <input type="file" accept=".csv" className="hidden" disabled={importing} onChange={handleImport} />
             </label>
             <button
               onClick={() => exportJobsToCSV(filtered)}
-              className={`px-5 py-2.5 rounded-lg text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#0066cc] text-white hover:bg-[#0071e3]"}`}
+              className={`px-4 py-2 md:px-5 md:py-2.5 rounded-lg text-[16px] md:text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#0066cc] text-white hover:bg-[#0071e3]"}`}
             >
               Export CSV
             </button>
@@ -445,18 +445,20 @@ export default function App() {
         {error && <p className="text-red-600 text-[17px] mb-4">{error}</p>}
 
         <div className="flex flex-col md:flex-row gap-3 mb-6">
-          <input
-            className="flex-1 px-5 py-2.5 rounded-lg bg-white border border-[#e0e0e0] focus:outline-none focus:ring-2 focus:ring-[#0071e3] text-[17px]"
-            placeholder="Search title, company, reason..."
-            value={q}
-          onChange={(e) => {
-            setQ(e.target.value)
-            if (debounceTimer.current) clearTimeout(debounceTimer.current)
-            debounceTimer.current = setTimeout(() => setQ(e.target.value), 300)
-          }}          />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[15px] text-[#7a7a7a] hover:text-[#1d1d1f] cursor-pointer transition" onClick={() => { setQ("") } } aria-label="Clear search">×</span>
+          <div className="relative flex-1">
+            <input
+              className="w-full px-4 py-2.5 md:px-5 md:py-2.5 rounded-lg bg-white border border-[#e0e0e0] focus:outline-none focus:ring-2 focus:ring-[#0071e3] text-[16px] md:text-[17px]"
+              placeholder="Search title, company, reason..."
+              value={q}
+            onChange={(e) => {
+              setQ(e.target.value)
+              if (debounceTimer.current) clearTimeout(debounceTimer.current)
+              debounceTimer.current = setTimeout(() => setQ(e.target.value), 300)
+            }}          />
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[15px] text-[#7a7a7a] hover:text-[#1d1d1f] cursor-pointer transition" onClick={() => { setQ("") } } aria-label="Clear search">×</span>
+          </div>
           <select
-            className="px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px]"
+            className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
             value={verdict}
             onChange={(e) => setVerdict(e.target.value)}
           >
@@ -465,7 +467,7 @@ export default function App() {
             <option value="maybe">Maybe</option>
           </select>
           <select
-            className="px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px]"
+            className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
             value={sourceFilter}
             onChange={(e) => setSourceFilter(e.target.value)}
           >
@@ -475,7 +477,7 @@ export default function App() {
             <option value="Kalibrr">Kalibrr</option>
           </select>
           <select
-            className="px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px]"
+            className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
@@ -486,7 +488,7 @@ export default function App() {
           </select>
           <button
             onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-            className="px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[17px]"
+            className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
           >
             {sortDir === "asc" ? "Asc" : "Desc"}
           </button>
@@ -498,11 +500,11 @@ export default function App() {
 
         <div className="grid gap-4">
           {paged.map((j) => (
-            <div key={j.url} className="rounded-[8px] bg-white border border-[#e0e0e0] p-6">
+            <div key={j.url} className="rounded-[8px] bg-white border border-[#e0e0e0] p-4 md:p-6">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-[21px] font-semibold" style={{ letterSpacing: "0.231px" }}>
+                    <h2 className="text-[18px] md:text-[21px] font-semibold" style={{ letterSpacing: "0.231px" }}>
                       {j.title}
                     </h2>
                     <span className={`text-xs px-2 py-0.5 rounded-lg ${j.verdict === "apply" ? "bg-[#e8f5e9] text-[#1b5e20]" : "bg-[#fff3e0] text-[#e65100]"}`}>
@@ -519,30 +521,30 @@ export default function App() {
                     {j.appliedDate && <span>Applied: {j.appliedDate}</span>}
                     {j.interviewDate && <span>Interview: {j.interviewDate}</span>}
                   </div>
-                  <div className="flex gap-3 mt-2">
-                    <div>
+                  <div className="flex gap-3 mt-2 flex-col md:flex-row">
+                    <div className="flex-1 md:flex-1">
                       <label className="text-[12px] text-[#7a7a7a] block mb-1">Applied date</label>
                       <input
                         type="date"
-                        className="px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px] w-[160px]"
+                        className="w-full md:w-[160px] px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px]"
                         value={j.appliedDate || ""}
                         onChange={(e) => handleDateChange(j, "appliedDate", e.target.value)}
                       />
                     </div>
-                    <div>
+                    <div className="flex-1 md:flex-1">
                       <label className="text-[12px] text-[#7a7a7a] block mb-1">Interview date</label>
                       <input
                         type="date"
-                        className="px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px] w-[160px]"
+                        className="w-full md:w-[160px] px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px]"
                         value={j.interviewDate || ""}
                         onChange={(e) => handleDateChange(j, "interviewDate", e.target.value)}
                       />
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 md:items-end">
+                <div className="flex flex-col gap-2 md:items-end w-full md:w-auto">
                   <select
-                    className="px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full md:w-auto px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
                     value={j.status}
                     onChange={(e) => handleStatusChange(j, e.target.value)}
                   >
@@ -552,7 +554,7 @@ export default function App() {
                       </option>
                     ))}
                   </select>
-                  <div className="flex gap-1 mt-1">
+                  <div className="flex gap-1 mt-1 md:mt-0">
                     <button
                       onClick={() => openEditModal(j)}
                       className="px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px] text-[#0066cc] hover:bg-[#f5f5f7]"
@@ -569,7 +571,7 @@ export default function App() {
                       href={j.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="px-4 py-1.5 rounded-lg bg-[#0066cc] hover:bg-[#0071e3] text-white text-[14px] text-center"
+                      className="w-full md:w-auto px-4 py-1.5 rounded-lg bg-[#0066cc] hover:bg-[#0071e3] text-white text-[14px] text-center"
                     >
                       Open ↗
                     </a>
@@ -599,8 +601,8 @@ export default function App() {
         </div>
 
         {showEditModal && editJob && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-[8px] p-6 max-w-md w-full mx-4 shadow-xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 md:p-0">
+            <div className="bg-white rounded-[8px] p-4 md:p-6 max-w-md w-full mx-auto shadow-xl max-h-[90vh] overflow-y-auto">
               <h2 className="text-xl font-semibold mb-4">Edit Job</h2>
               <div className="space-y-3">
                 <div>
