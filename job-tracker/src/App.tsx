@@ -307,21 +307,18 @@ export default function App() {
 
   const filtered = useMemo(() => {
     let list = jobsState
-      .filter((j) => {
-        if (tab === "All") return true
-      if (tab === "Today") {
-        list = list.filter((j) => j.date_found === today)
-      } else if (tab !== "All") {
-        list = list.filter((j) => j.status === tab)
-      }
-      })
-      .filter((j) => (verdict === "all" ? true : j.verdict === verdict))
-      .filter((j) => (sourceFilter === "all" ? true : j.source === sourceFilter))
-      .filter((j) => {
-        if (!q) return true
-        const searchable = `${j.title} ${j.company} ${j.reason} ${j.url} ${j.source}`.toLowerCase()
-        return searchable.includes(q.toLowerCase())
-      })
+    if (tab === "Today") {
+      list = list.filter((j) => j.date_found === today)
+    } else if (tab !== "All") {
+      list = list.filter((j) => j.status === tab)
+    }
+    list = list.filter((j) => (verdict === "all" ? true : j.verdict === verdict))
+    list = list.filter((j) => (sourceFilter === "all" ? true : j.source === sourceFilter))
+    list = list.filter((j) => {
+      if (!q) return true
+      const searchable = `${j.title} ${j.company} ${j.reason} ${j.url} ${j.source}`.toLowerCase()
+      return searchable.includes(q.toLowerCase())
+    })
     list.sort((a, b) => {
       let va: any, vb: any
       if (sortBy === "score") { va = Number(a.score); vb = Number(b.score) }
