@@ -464,18 +464,8 @@ export default function App() {
               onClick={() => setTab(t)}
               className={`px-4 py-1.5 rounded-lg text-[16px] transition ${tab === t ? "bg-[#0066cc] text-white" : "bg-white border border-[#e0e0e0] text-[#1d1d1f] hover:bg-[#f5f5f7]"}`}
             >
-              {t}
+              {t} ({counts[t] ?? 0})
             </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-2 text-xs text-[#7a7a7a] mb-6">
-          <span className={`font-medium ${tab === "All" ? "text-[#0066cc]" : "text-[#1d1d1f]"}`}>All: {counts.All}</span>
-          <span className={`font-medium ${tab === "Today" ? "text-[#0066cc]" : "text-[#1d1d1f]"}`}>Today: {counts.Today}</span>
-          {STATUSES.map((s) => (
-            <span key={s} className={`font-medium ${tab === s ? "text-[#0066cc]" : "text-[#1d1d1f]"}`}>
-              {s}: {counts[s]}
-            </span>
           ))}
         </div>
 
