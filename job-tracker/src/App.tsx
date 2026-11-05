@@ -703,6 +703,112 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 md:p-0">
+            <div className="bg-white rounded-[8px] p-4 md:p-6 max-w-md w-full mx-auto shadow-xl max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-semibold mb-4">Add Job Manually</h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Title *</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Company</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    value={form.company}
+                    onChange={(e) => setForm({ ...form, company: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[12px] text-[#7a7a7a] mb-1">URL *</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      value={form.url}
+                      onChange={(e) => setForm({ ...form, url: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Source</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      value={form.source}
+                      onChange={(e) => setForm({ ...form, source: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Score</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      value={form.score}
+                      onChange={(e) => setForm({ ...form, score: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Verdict</label>
+                    <select
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      value={form.verdict}
+                      onChange={(e) => setForm({ ...form, verdict: e.target.value })}
+                    >
+                      <option value="apply">Apply</option>
+                      <option value="maybe">Maybe</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Status</label>
+                  <select
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  >
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Reason</label>
+                  <textarea
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    value={form.reason}
+                    onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-6 justify-end">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[#7a7a7a] hover:bg-[#f5f5f7]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={addManual}
+                  className="px-4 py-1.5 rounded-lg bg-[#0066cc] text-white hover:bg-[#0071e3]"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
