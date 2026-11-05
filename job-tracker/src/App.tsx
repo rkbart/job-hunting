@@ -132,7 +132,6 @@ async function importJobsToDB(jobsList: Job[]) {
   }
 }
 
-// Export jobs from the database to a CSV file for download
 async function exportJobsToCSV(jobsList?: Job[]) {
   const allJobs = jobsList ?? (await loadJobsFromDB())
   const headers = ['url', 'title', 'company', 'score', 'verdict', 'reason', 'source', 'status', 'date_found', 'appliedDate', 'interviewDate', 'importBatch', 'importedAt']
@@ -408,38 +407,38 @@ export default function App() {
 
   if (!loaded) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <p className="text-[#1d1d1f] text-[17px]">Loading database…</p>
+      <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
+        <p className="text-[#000000] text-[17px]">Loading database…</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-['SF Pro Text','system-ui','-apple-system',sans-serif]">
+    <div className="min-h-screen bg-[#ffffff] text-[#000000] font-['Apercu','Helvetica Neue',Helvetica,Arial,sans-serif]">
       <div className="max-w-7xl mx-auto px-4 py-6 md:px-6 md:py-10">
         <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight" style={{ letterSpacing: "-0.28px" }}>
+            <h1 className="text-3xl md:text-4xl font-normal italic tracking-tight" style={{ letterSpacing: "-0.5px", fontFamily: 'Georgia, "Times New Roman", serif' }}>
               Job Sweep Tracker
             </h1>
-            <p className="text-[#7a7a7a] mt-2 text-[16px] md:text-[17px]">Ranked shortlist — {jobsState.length} roles</p>
+            <p className="text-[#757575] mt-2 text-[16px] md:text-[17px]">Ranked shortlist — {jobsState.length} roles</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowModal(true)}
-              className="px-4 py-2 md:px-5 md:py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[16px] md:text-[17px] hover:border-[#0066cc] transition"
+              className="px-4 py-2 md:px-5 md:py-2.5 rounded-none bg-white border border-[#000000] text-[16px] md:text-[17px] hover:border-[#000000] transition"
             >
               + Add manual
             </button>
             <label
-              className={`px-4 py-2 md:px-5 md:py-2.5 rounded-lg text-[16px] md:text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#0066cc] text-white hover:bg-[#0071e3]"}`}
+              className={`px-4 py-2 md:px-5 md:py-2.5 rounded-none text-[16px] md:text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#000000] text-white hover:bg-[#1a1a1a]"}`}
             >
               {importing ? "Importing…" : "Import CSV"}
               <input type="file" accept=".csv" className="hidden" disabled={importing} onChange={handleImport} />
             </label>
             <button
               onClick={() => exportJobsToCSV(filtered)}
-              className={`px-4 py-2 md:px-5 md:py-2.5 rounded-lg text-[16px] md:text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#0066cc] text-white hover:bg-[#0071e3]"}`}
+              className={`px-4 py-2 md:px-5 md:py-2.5 rounded-none text-[16px] md:text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#000000] text-white hover:bg-[#1a1a1a]"}`}
             >
               Export CSV
             </button>
@@ -447,22 +446,22 @@ export default function App() {
         </header>
 
         {importResult && (
-          <div className="mb-4 rounded-lg bg-[#e8f5e9] border border-[#1b5e20] text-[#1b5e20] px-5 py-3 text-[15px] flex items-center justify-between">
+          <div className="mb-4 rounded-none bg-white border border-[#e0e0e0] text-[#000000] px-5 py-3 text-[15px] flex items-center justify-between">
             <span>Imported: {importResult.inserted} new, {importResult.updated} updated, {importResult.skipped} already tracked</span>
-            <button onClick={() => setImportResult(null)} className="underline underline-offset-4 hover:text-[#1b5e20]">
+            <button onClick={() => setImportResult(null)} className="underline underline-offset-4 hover:text-[#000000]">
               Dismiss
             </button>
           </div>
         )}
 
-        {error && <p className="text-red-600 text-[17px] mb-4">{error}</p>}
+        {error && <p className="text-[#000000] text-[17px] mb-4">{error}</p>}
 
         <div className="flex flex-wrap gap-2 mb-6">
           {TABS.map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-1.5 rounded-lg text-[16px] transition ${tab === t ? "bg-[#0066cc] text-white" : "bg-white border border-[#e0e0e0] text-[#1d1d1f] hover:bg-[#f5f5f7]"}`}
+              className={`px-4 py-1.5 rounded-none text-[16px] transition ${tab === t ? "bg-[#000000] text-white" : "bg-white border border-[#e0e0e0] text-[#000000] hover:bg-[#f5f5f5]"}`}
             >
               {t} ({counts[t] ?? 0})
             </button>
@@ -472,7 +471,7 @@ export default function App() {
         <div className="flex flex-col md:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <input
-              className="w-full px-4 py-2.5 md:px-5 md:py-2.5 rounded-lg bg-white border border-[#e0e0e0] focus:outline-none focus:ring-2 focus:ring-[#0071e3] text-[16px] md:text-[17px]"
+              className="w-full px-4 py-2.5 md:px-5 md:py-2.5 rounded-none bg-white border border-[#e0e0e0] focus:outline-none focus:ring-0 text-[16px] md:text-[17px]"
               placeholder="Search title, company, reason..."
               value={q}
             onChange={(e) => {
@@ -480,10 +479,10 @@ export default function App() {
               if (debounceTimer.current) clearTimeout(debounceTimer.current)
               debounceTimer.current = setTimeout(() => setQ(e.target.value), 300)
             }}          />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[15px] text-[#7a7a7a] hover:text-[#1d1d1f] cursor-pointer transition" onClick={() => { setQ("") } } aria-label="Clear search">×</span>
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[15px] text-[#757575] hover:text-[#000000] cursor-pointer transition" onClick={() => { setQ("") } } aria-label="Clear search">×</span>
           </div>
           <select
-            className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
+            className="w-full md:w-auto px-4 py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
             value={verdict}
             onChange={(e) => setVerdict(e.target.value)}
           >
@@ -492,7 +491,7 @@ export default function App() {
             <option value="maybe">Maybe</option>
           </select>
           <select
-            className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
+            className="w-full md:w-auto px-4 py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
             value={sourceFilter}
             onChange={(e) => setSourceFilter(e.target.value)}
           >
@@ -502,7 +501,7 @@ export default function App() {
             <option value="Kalibrr">Kalibrr</option>
           </select>
           <select
-            className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
+            className="w-full md:w-auto px-4 py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
@@ -513,55 +512,55 @@ export default function App() {
           </select>
           <button
             onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-            className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
+            className="w-full md:w-auto px-4 py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
           >
             {sortDir === "asc" ? "Asc" : "Desc"}
           </button>
         </div>
 
         {!error && filtered.length === 0 && (
-          <p className="text-[#7a7a7a] text-[17px]">No jobs match. Try importing a CSV or adding manually.</p>
+          <p className="text-[#757575] text-[17px]">No jobs match. Try importing a CSV or adding manually.</p>
         )}
 
         <div className="grid gap-4">
           {paged.map((j) => (
-            <div key={j.url} className="rounded-[8px] bg-white border border-[#e0e0e0] p-4 md:p-6">
+            <div key={j.url} className="rounded-none bg-white border border-[#e0e0e0] p-4 md:p-6">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-[18px] md:text-[21px] font-semibold" style={{ letterSpacing: "0.231px" }}>
+                    <h2 className="text-[18px] md:text-[21px] font-normal italic" style={{ letterSpacing: "-0.28px", fontFamily: 'Georgia, "Times New Roman", serif' }}>
                       {j.title}
                     </h2>
-                    <span className={`text-xs px-2 py-0.5 rounded-lg ${j.verdict === "apply" ? "bg-[#e8f5e9] text-[#1b5e20]" : "bg-[#fff3e0] text-[#e65100]"}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-none ${j.verdict === "apply" ? "bg-[#f5f5f5] text-[#000000]" : "bg-[#f5f5f5] text-[#000000]"}`}>
                       {j.score} · {j.verdict}
                     </span>
-                    <span className="text-xs px-2 py-0.5 rounded-lg bg-[#f5f5f7] text-[#7a7a7a]">{j.source}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-none bg-[#f5f5f5] text-[#757575]">{j.source}</span>
                   </div>
-                  <p className="text-[#1d1d1f] mt-1 font-medium">{j.company}</p>
-                  <p className="text-[14px] text-[#7a7a7a] mt-2" style={{ lineHeight: 1.43 }}>
+                  <p className="text-[#000000] mt-1 font-medium">{j.company}</p>
+                  <p className="text-[14px] text-[#757575] mt-2" style={{ lineHeight: 1.43 }}>
                     {j.reason}
                   </p>
-                  <div className="flex gap-3 mt-2 text-[12px] text-[#7a7a7a] flex-wrap">
+                  <div className="flex gap-3 mt-2 text-[12px] text-[#757575] flex-wrap">
                     <span>Found: {j.date_found}</span>
                     {j.appliedDate && <span>Applied: {j.appliedDate}</span>}
                     {j.interviewDate && <span>Interview: {j.interviewDate}</span>}
                   </div>
                   <div className="flex gap-3 mt-2 flex-col md:flex-row">
                     <div className="flex-1 md:flex-1">
-                      <label className="text-[12px] text-[#7a7a7a] block mb-1">Applied date</label>
+                      <label className="text-[12px] text-[#757575] block mb-1">Applied date</label>
                       <input
                         type="date"
-                        className="w-full md:w-[160px] px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px]"
+                        className="w-full md:w-[160px] px-2 py-1 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                         value={j.appliedDate || ""}
                         onChange={(e) => handleDateChange(j, "appliedDate", e.target.value)}
                       />
                     </div>
                     {j.status === "Interview" && (
                       <div className="flex-1 md:flex-1">
-                        <label className="text-[12px] text-[#7a7a7a] block mb-1">Interview date</label>
+                        <label className="text-[12px] text-[#757575] block mb-1">Interview date</label>
                         <input
                           type="date"
-                          className="w-full md:w-[160px] px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px]"
+                          className="w-full md:w-[160px] px-2 py-1 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                           value={j.interviewDate || ""}
                           onChange={(e) => handleDateChange(j, "interviewDate", e.target.value)}
                         />
@@ -571,7 +570,7 @@ export default function App() {
                 </div>
                 <div className="flex flex-col gap-2 md:items-end w-full md:w-auto">
                   <select
-                    className="w-full md:w-auto px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full md:w-auto px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={j.status}
                     onChange={(e) => handleStatusChange(j, e.target.value)}
                   >
@@ -584,13 +583,13 @@ export default function App() {
                   <div className="flex gap-1 mt-1 md:mt-0">
                     <button
                       onClick={() => openEditModal(j)}
-                      className="px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px] text-[#0066cc] hover:bg-[#f5f5f7]"
+                      className="px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px] text-[#000000] hover:bg-[#f5f5f5]"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(j.url)}
-                      className="px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px] text-[#d32f2f] hover:bg-[#fdecea]"
+                      className="px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px] text-[#000000] hover:bg-[#f5f5f5]"
                     >
                       Delete
                     </button>
@@ -598,7 +597,7 @@ export default function App() {
                       href={j.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-full md:w-auto px-4 py-1.5 rounded-lg bg-[#0066cc] hover:bg-[#0071e3] text-white text-[14px] text-center"
+                      className="w-full md:w-auto px-4 py-1.5 rounded-none bg-[#000000] hover:bg-[#1a1a1a] text-white text-[14px] text-center"
                     >
                       Open ↗
                     </a>
@@ -613,67 +612,69 @@ export default function App() {
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-4 py-1.5 rounded-lg bg-white border border-[#e0e0e0] disabled:opacity-40"
+            className="px-4 py-1.5 rounded-none bg-white border border-[#e0e0e0] disabled:opacity-40"
           >
             Prev
           </button>
-          <span className="text-sm text-[#7a7a7a]">Page {page} of {totalPages}</span>
+          <span className="text-sm text-[#757575]">Page {page} of {totalPages}</span>
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="px-4 py-1.5 rounded-lg bg-white border border-[#e0e0e0] disabled:opacity-40"
+            className="px-4 py-1.5 rounded-none bg-white border border-[#e0e0e0] disabled:opacity-40"
           >
             Next
           </button>
         </div>
 
         {showEditModal && editJob && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 md:p-0">
-            <div className="bg-white rounded-[8px] p-4 md:p-6 max-w-md w-full mx-auto shadow-xl max-h-[90vh] overflow-y-auto">
-              <h2 className="text-xl font-semibold mb-4">Edit Job</h2>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-0">
+            <div className="bg-white rounded-none p-4 md:p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-normal italic mb-4" style={{ letterSpacing: "-0.28px", fontFamily: 'Georgia, "Times New Roman", serif' }}>
+                Edit Job
+              </h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Title</label>
+                  <label className="block text-[12px] text-[#757575] mb-1">Title</label>
                   <input
                     type="text"
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={editForm.title}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Company</label>
+                  <label className="block text-[12px] text-[#757575] mb-1">Company</label>
                   <input
                     type="text"
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={editForm.company}
                     onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Score</label>
+                    <label className="block text-[12px] text-[#757575] mb-1">Score</label>
                     <input
                       type="text"
-                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                       value={editForm.score}
                       onChange={(e) => setEditForm({ ...editForm, score: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Source</label>
+                    <label className="block text-[12px] text-[#757575] mb-1">Source</label>
                     <input
                       type="text"
-                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                       value={editForm.source}
                       onChange={(e) => setEditForm({ ...editForm, source: e.target.value })}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Verdict</label>
+                  <label className="block text-[12px] text-[#757575] mb-1">Verdict</label>
                   <select
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={editForm.verdict}
                     onChange={(e) => setEditForm({ ...editForm, verdict: e.target.value })}
                   >
@@ -682,9 +683,9 @@ export default function App() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Status</label>
+                  <label className="block text-[12px] text-[#757575] mb-1">Status</label>
                   <select
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={editForm.status}
                     onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                   >
@@ -697,28 +698,28 @@ export default function App() {
                 </div>
                 {editForm.status === "Interview" && (
                   <div>
-                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Interview date</label>
+                    <label className="block text-[12px] text-[#757575] mb-1">Interview date</label>
                     <input
                       type="date"
-                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                       value={editForm.interviewDate}
                       onChange={(e) => setEditForm({ ...editForm, interviewDate: e.target.value })}
                     />
                   </div>
                 )}
                 <div>
-                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Reason</label>
+                  <label className="block text-[12px] text-[#757575] mb-1">Reason</label>
                   <textarea
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={editForm.reason}
                     onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-[12px] text-[#7a7a7a] mb-1">URL</label>
+                  <label className="block text-[12px] text-[#757575] mb-1">URL</label>
                   <input
                     type="text"
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={editForm.url}
                     onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
                   />
@@ -727,13 +728,13 @@ export default function App() {
               <div className="flex gap-2 mt-6 justify-end">
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[#7a7a7a] hover:bg-[#f5f5f7]"
+                  className="px-4 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[#757575] hover:bg-[#f5f5f5]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
-                  className="px-4 py-1.5 rounded-lg bg-[#0066cc] text-white hover:bg-[#0071e3]"
+                  className="px-4 py-1.5 rounded-none bg-[#000000] text-white hover:bg-[#1a1a1a]"
                 >
                   Save
                 </button>
@@ -743,43 +744,45 @@ export default function App() {
         )}
 
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 md:p-0">
-            <div className="bg-white rounded-[8px] p-4 md:p-6 max-w-md w-full mx-auto shadow-xl max-h-[90vh] overflow-y-auto">
-              <h2 className="text-xl font-semibold mb-4">Add Job Manually</h2>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-0">
+            <div className="bg-white rounded-none p-4 md:p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-normal italic mb-4" style={{ letterSpacing: "-0.28px", fontFamily: 'Georgia, "Times New Roman", serif' }}>
+                Add Job Manually
+              </h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Title *</label>
+                  <label className="block text-[12px] text-[#757575] mb-1">Title *</label>
                   <input
                     type="text"
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Company</label>
+                  <label className="block text-[12px] text-[#757575] mb-1">Company</label>
                   <input
                     type="text"
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={form.company}
                     onChange={(e) => setForm({ ...form, company: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[12px] text-[#7a7a7a] mb-1">URL *</label>
+                    <label className="block text-[12px] text-[#757575] mb-1">URL *</label>
                     <input
                       type="text"
-                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                       value={form.url}
                       onChange={(e) => setForm({ ...form, url: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Source</label>
+                    <label className="block text-[12px] text-[#757575] mb-1">Source</label>
                     <input
                       type="text"
-                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                       value={form.source}
                       onChange={(e) => setForm({ ...form, source: e.target.value })}
                     />
@@ -787,18 +790,18 @@ export default function App() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Score</label>
+                    <label className="block text-[12px] text-[#757575] mb-1">Score</label>
                     <input
                       type="text"
-                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                       value={form.score}
                       onChange={(e) => setForm({ ...form, score: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Verdict</label>
+                    <label className="block text-[12px] text-[#757575] mb-1">Verdict</label>
                     <select
-                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                       value={form.verdict}
                       onChange={(e) => setForm({ ...form, verdict: e.target.value })}
                     >
@@ -808,9 +811,9 @@ export default function App() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Status</label>
+                  <label className="block text-[12px] text-[#757575] mb-1">Status</label>
                   <select
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
                   >
@@ -823,19 +826,19 @@ export default function App() {
                 </div>
                 {form.status === "Interview" && (
                   <div>
-                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Interview date</label>
+                    <label className="block text-[12px] text-[#757575] mb-1">Interview date</label>
                     <input
                       type="date"
-                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                       value={form.interviewDate}
                       onChange={(e) => setForm({ ...form, interviewDate: e.target.value })}
                     />
                   </div>
                 )}
                 <div>
-                  <label className="block text-[12px] text-[#7a7a7a] mb-1">Reason</label>
+                  <label className="block text-[12px] text-[#757575] mb-1">Reason</label>
                   <textarea
-                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                    className="w-full px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={form.reason}
                     onChange={(e) => setForm({ ...form, reason: e.target.value })}
                   />
@@ -844,13 +847,13 @@ export default function App() {
               <div className="flex gap-2 mt-6 justify-end">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[#7a7a7a] hover:bg-[#f5f5f7]"
+                  className="px-4 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[#757575] hover:bg-[#f5f5f5]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={addManual}
-                  className="px-4 py-1.5 rounded-lg bg-[#0066cc] text-white hover:bg-[#0071e3]"
+                  className="px-4 py-1.5 rounded-none bg-[#000000] text-white hover:bg-[#1a1a1a]"
                 >
                   Save
                 </button>
