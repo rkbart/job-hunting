@@ -27,6 +27,7 @@ type ManualForm = {
   reason: string
   status: string
   verdict: string
+  interviewDate: string
 }
 
 const INITIAL_FORM: ManualForm = {
@@ -38,6 +39,7 @@ const INITIAL_FORM: ManualForm = {
   reason: "",
   status: "New",
   verdict: "maybe",
+  interviewDate: "",
 }
 
 const STATUSES = ["New", "Applied", "Interview", "Offer", "Rejected", "Set Aside"]
@@ -249,12 +251,17 @@ export default function App() {
       reason: job.reason,
       status: job.status,
       verdict: job.verdict,
+      interviewDate: job.interviewDate || "",
     })
     setShowEditModal(true)
   }
 
   const handleSaveEdit = async () => {
     if (!editJob || !editForm.title || !editForm.url) return
+    if (editForm.status === "Interview" && !editForm.interviewDate) {
+      setError("Interview date is required when status is Interview")
+      return
+    }
     const now = new Date().toISOString().slice(0, 10)
     await updateJobInDB(editJob.url, {
       title: editForm.title,
@@ -264,6 +271,7 @@ export default function App() {
       reason: editForm.reason,
       source: editForm.source,
       status: editForm.status,
+      interviewDate: editForm.interviewDate || null,
       date_found: now,
     })
     setJobs((prev) =>
@@ -338,6 +346,10 @@ export default function App() {
 
   const addManual = async () => {
     if (!form.title || !form.url) return
+    if (form.status === "Interview" && !form.interviewDate) {
+      setError("Interview date is required when status is Interview")
+      return
+    }
 
     const j: Job = {
       date_found: new Date().toISOString().slice(0, 10),
@@ -349,6 +361,7 @@ export default function App() {
       url: form.url,
       source: form.source || "Manual",
       status: form.status || "New",
+      interviewDate: form.interviewDate || null,
     }
     await saveJobToDB(j)
     setJobs((prev) => [j, ...prev])
@@ -531,15 +544,17 @@ export default function App() {
                         onChange={(e) => handleDateChange(j, "appliedDate", e.target.value)}
                       />
                     </div>
-                    <div className="flex-1 md:flex-1">
-                      <label className="text-[12px] text-[#7a7a7a] block mb-1">Interview date</label>
-                      <input
-                        type="date"
-                        className="w-full md:w-[160px] px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px]"
-                        value={j.interviewDate || ""}
-                        onChange={(e) => handleDateChange(j, "interviewDate", e.target.value)}
-                      />
-                    </div>
+                    {j.status === "Interview" && (
+                      <div className="flex-1 md:flex-1">
+                        <label className="text-[12px] text-[#7a7a7a] block mb-1">Interview date</label>
+                        <input
+                          type="date"
+                          className="w-full md:w-[160px] px-2 py-1 rounded-[8px] bg-white border border-[#e0e0e0] text-[14px]"
+                          value={j.interviewDate || ""}
+                          onChange={(e) => handleDateChange(j, "interviewDate", e.target.value)}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 md:items-end w-full md:w-auto">
@@ -668,6 +683,17 @@ export default function App() {
                     ))}
                   </select>
                 </div>
+                {editForm.status === "Interview" && (
+                  <div>
+                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Interview date</label>
+                    <input
+                      type="date"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      value={editForm.interviewDate}
+                      onChange={(e) => setEditForm({ ...editForm, interviewDate: e.target.value })}
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-[12px] text-[#7a7a7a] mb-1">Reason</label>
                   <textarea
@@ -783,6 +809,17 @@ export default function App() {
                     ))}
                   </select>
                 </div>
+                {form.status === "Interview" && (
+                  <div>
+                    <label className="block text-[12px] text-[#7a7a7a] mb-1">Interview date</label>
+                    <input
+                      type="date"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#e0e0e0] text-[14px]"
+                      value={form.interviewDate}
+                      onChange={(e) => setForm({ ...form, interviewDate: e.target.value })}
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-[12px] text-[#7a7a7a] mb-1">Reason</label>
                   <textarea
