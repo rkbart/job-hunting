@@ -160,6 +160,7 @@ export default function App() {
   const [sourceFilter, setSourceFilter] = useState("all")
   const [tab, setTab] = useState("New")
   const [page, setPage] = useState(1)
+  const [pageTransition, setPageTransition] = useState<"enter" | "exit" | null>(null)
   const today = new Date().toISOString().slice(0, 10)
   const [showModal, setShowModal] = useState(false)
   const [sortBy, setSortBy] = useState("score")
@@ -226,6 +227,16 @@ export default function App() {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const handlePageChange = async (newPage: number) => {
+    if (newPage === page) return
+    setPageTransition("exit")
+    await new Promise((r) => setTimeout(r, 200))
+    setPage(newPage)
+    setPageTransition("enter")
+    setTimeout(() => setPageTransition(null), 300)
+    scrollToTop()
   }
 
   const handleStatusChange = async (job: Job, status: string) => {
@@ -534,7 +545,13 @@ export default function App() {
           <p className="text-[#757575] text-[17px]">No jobs match. Try importing a CSV or adding manually.</p>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          style={{
+            opacity: pageTransition === null ? 1 : 0,
+            transition: "opacity 200ms ease",
+          }}
+        >
           {paged.map((j) => (
             <div key={j.url} className="rounded-none bg-white border border-[#e0e0e0] p-4 md:p-6">
               <div className="flex flex-col gap-3">
@@ -621,7 +638,7 @@ export default function App() {
         <div className="flex items-center justify-center gap-3 mt-6 sm:gap-2">
           <button
             disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => handlePageChange(Math.max(1, page - 1))}
             className="px-3 py-1 md:px-4 md:py-1.5 rounded-none bg-white border border-[#e0e0e0] disabled:opacity-40 text-[14px] sm:text-[16px]"
           >
             Prev
@@ -629,7 +646,7 @@ export default function App() {
           <span className="text-sm text-[#757575]">Page {page} of {totalPages}</span>
           <button
             disabled={page >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
             className="px-3 py-1 md:px-4 md:py-1.5 rounded-none bg-white border border-[#e0e0e0] disabled:opacity-40 text-[14px] sm:text-[16px]"
           >
             Next
