@@ -528,7 +528,7 @@ export default function App() {
           {paged.map((j) => (
             <div key={j.url} className="rounded-none bg-white border border-[#e0e0e0] p-4 md:p-6">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-[18px] md:text-[21px] font-normal italic" style={{ letterSpacing: "-0.28px", fontFamily: 'Georgia, "Times New Roman", serif' }}>
                       {j.title}
@@ -548,21 +548,21 @@ export default function App() {
                     {j.interviewDate && <span>Interview: {j.interviewDate}</span>}
                   </div>
                   <div className="flex flex-col gap-3 mt-2 sm:flex-row">
-                    <div className="flex-1 md:flex-1">
+                    <div className="flex-1 md:flex-1 max-w-full">
                       <label className="text-[12px] text-[#757575] block mb-1">Applied date</label>
                       <input
                         type="date"
-                        className="w-full md:w-[160px] px-2 py-1 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
+                        className="max-w-full md:w-[160px] px-2 py-1 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                         value={j.appliedDate || ""}
                         onChange={(e) => handleDateChange(j, "appliedDate", e.target.value)}
                       />
                     </div>
                     {j.status === "Interview" && (
-                      <div className="flex-1 md:flex-1">
+                      <div className="flex-1 md:flex-1 max-w-full">
                         <label className="text-[12px] text-[#757575] block mb-1">Interview date</label>
                         <input
                           type="date"
-                          className="w-full md:w-[160px] px-2 py-1 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
+                          className="max-w-full md:w-[160px] px-2 py-1 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                           value={j.interviewDate || ""}
                           onChange={(e) => handleDateChange(j, "interviewDate", e.target.value)}
                         />
@@ -570,9 +570,9 @@ export default function App() {
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 md:items-end w-full md:w-auto">
+                <div className="flex flex-col gap-2 md:items-end w-auto max-w-full">
                   <select
-                    className="w-full md:w-auto px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
+                    className="max-w-full md:w-auto px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={j.status}
                     onChange={(e) => handleStatusChange(j, e.target.value)}
                   >
@@ -585,13 +585,13 @@ export default function App() {
                   <div className="flex flex-col sm:flex-row gap-2 mt-2 md:mt-0">
                     <button
                       onClick={() => openEditModal(j)}
-                      className="w-full sm:w-auto px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px] text-[#000000] hover:bg-[#f5f5f5]"
+                      className="max-w-full sm:w-auto px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px] text-[#000000] hover:bg-[#f5f5f5]"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(j.url)}
-                      className="w-full sm:w-auto px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px] text-[#000000] hover:bg-[#f5f5f5]"
+                      className="max-w-full sm:w-auto px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px] text-[#000000] hover:bg-[#f5f5f5]"
                     >
                       Delete
                     </button>
@@ -599,7 +599,7 @@ export default function App() {
                       href={j.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-full sm:w-auto px-4 py-1.5 rounded-none bg-[#000000] hover:bg-[#1a1a1a] text-white text-[14px] text-center"
+                      className="max-w-full sm:w-auto px-4 py-1.5 rounded-none bg-[#000000] hover:bg-[#1a1a1a] text-white text-[14px] text-center"
                     >
                       Open ↗
                     </a>
