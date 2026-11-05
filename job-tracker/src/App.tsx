@@ -426,19 +426,19 @@ export default function App() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowModal(true)}
-              className="px-4 py-2 md:px-5 md:py-2.5 rounded-none bg-white border border-[#000000] text-[16px] md:text-[17px] hover:border-[#000000] transition"
+              className="px-3 py-1.5 md:px-4 md:py-2 rounded-none bg-white border border-[#000000] text-[14px] sm:text-[16px] hover:border-[#000000] transition"
             >
               + Add manual
             </button>
             <label
-              className={`px-4 py-2 md:px-5 md:py-2.5 rounded-none text-[16px] md:text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#000000] text-white hover:bg-[#1a1a1a]"}`}
+              className={`px-3 py-1.5 md:px-4 md:py-2 rounded-none text-[14px] sm:text-[16px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#000000] text-white hover:bg-[#1a1a1a]"}`}
             >
               {importing ? "Importing…" : "Import CSV"}
               <input type="file" accept=".csv" className="hidden" disabled={importing} onChange={handleImport} />
             </label>
             <button
               onClick={() => exportJobsToCSV(filtered)}
-              className={`px-4 py-2 md:px-5 md:py-2.5 rounded-none text-[16px] md:text-[17px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#000000] text-white hover:bg-[#1a1a1a]"}`}
+              className={`px-3 py-1.5 md:px-4 md:py-2 rounded-none text-[14px] sm:text-[16px] cursor-pointer transition ${importing ? "opacity-50 cursor-not-allowed" : "bg-[#000000] text-white hover:bg-[#1a1a1a]"}`}
             >
               Export CSV
             </button>
@@ -456,20 +456,20 @@ export default function App() {
 
         {error && <p className="text-[#000000] text-[17px] mb-4">{error}</p>}
 
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-1 mb-6">
           {TABS.map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-1.5 rounded-none text-[16px] transition ${tab === t ? "bg-[#000000] text-white" : "bg-white border border-[#e0e0e0] text-[#000000] hover:bg-[#f5f5f5]"}`}
+              className={`px-3 py-1 rounded-none text-[14px] sm:text-[16px] transition ${tab === t ? "bg-[#000000] text-white" : "bg-white border border-[#e0e0e0] text-[#000000] hover:bg-[#f5f5f5]"}`}
             >
               {t} ({counts[t] ?? 0})
             </button>
           ))}
         </div>
 
-        <div className="flex flex-col md:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="relative flex-1 sm:col-span-2">
             <input
               className="w-full px-4 py-2.5 md:px-5 md:py-2.5 rounded-none bg-white border border-[#e0e0e0] focus:outline-none focus:ring-0 text-[16px] md:text-[17px]"
               placeholder="Search title, company, reason..."
@@ -482,7 +482,7 @@ export default function App() {
             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[15px] text-[#757575] hover:text-[#000000] cursor-pointer transition" onClick={() => { setQ("") } } aria-label="Clear search">×</span>
           </div>
           <select
-            className="w-full md:w-auto px-4 py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
+            className="w-full px-4 py-2.5 md:px-4 md:py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
             value={verdict}
             onChange={(e) => setVerdict(e.target.value)}
           >
@@ -491,7 +491,7 @@ export default function App() {
             <option value="maybe">Maybe</option>
           </select>
           <select
-            className="w-full md:w-auto px-4 py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
+            className="w-full px-4 py-2.5 md:px-4 md:py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
             value={sourceFilter}
             onChange={(e) => setSourceFilter(e.target.value)}
           >
@@ -500,22 +500,24 @@ export default function App() {
             <option value="JobStreet">JobStreet</option>
             <option value="Kalibrr">Kalibrr</option>
           </select>
-          <select
-            className="w-full md:w-auto px-4 py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <option value="score">Score</option>
-            <option value="found">Date found</option>
-            <option value="applied">Date applied</option>
-            <option value="title">Title</option>
-          </select>
-          <button
-            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-            className="w-full md:w-auto px-4 py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
-          >
-            {sortDir === "asc" ? "Asc" : "Desc"}
-          </button>
+          <div className="flex flex-col gap-1">
+            <select
+              className="w-full px-4 py-2.5 md:px-4 md:py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="score">Score</option>
+              <option value="found">Date found</option>
+              <option value="applied">Date applied</option>
+              <option value="title">Title</option>
+            </select>
+            <button
+              onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+              className="w-full px-4 py-2.5 md:px-4 md:py-2.5 rounded-none bg-white border border-[#e0e0e0] text-[16px] md:text-[17px]"
+            >
+              {sortDir === "asc" ? "Asc" : "Desc"}
+            </button>
+          </div>
         </div>
 
         {!error && filtered.length === 0 && (
@@ -545,7 +547,7 @@ export default function App() {
                     {j.appliedDate && <span>Applied: {j.appliedDate}</span>}
                     {j.interviewDate && <span>Interview: {j.interviewDate}</span>}
                   </div>
-                  <div className="flex gap-3 mt-2 flex-col md:flex-row">
+                  <div className="flex flex-col gap-3 mt-2 sm:flex-row">
                     <div className="flex-1 md:flex-1">
                       <label className="text-[12px] text-[#757575] block mb-1">Applied date</label>
                       <input
@@ -580,16 +582,16 @@ export default function App() {
                       </option>
                     ))}
                   </select>
-                  <div className="flex gap-1 mt-1 md:mt-0">
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2 md:mt-0">
                     <button
                       onClick={() => openEditModal(j)}
-                      className="px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px] text-[#000000] hover:bg-[#f5f5f5]"
+                      className="w-full sm:w-auto px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px] text-[#000000] hover:bg-[#f5f5f5]"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(j.url)}
-                      className="px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px] text-[#000000] hover:bg-[#f5f5f5]"
+                      className="w-full sm:w-auto px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px] text-[#000000] hover:bg-[#f5f5f5]"
                     >
                       Delete
                     </button>
@@ -597,7 +599,7 @@ export default function App() {
                       href={j.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-full md:w-auto px-4 py-1.5 rounded-none bg-[#000000] hover:bg-[#1a1a1a] text-white text-[14px] text-center"
+                      className="w-full sm:w-auto px-4 py-1.5 rounded-none bg-[#000000] hover:bg-[#1a1a1a] text-white text-[14px] text-center"
                     >
                       Open ↗
                     </a>
@@ -608,11 +610,11 @@ export default function App() {
           ))}
         </div>
 
-        <div className="flex items-center justify-center gap-3 mt-6">
+        <div className="flex items-center justify-center gap-3 mt-6 sm:gap-2">
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-4 py-1.5 rounded-none bg-white border border-[#e0e0e0] disabled:opacity-40"
+            className="px-3 py-1 md:px-4 md:py-1.5 rounded-none bg-white border border-[#e0e0e0] disabled:opacity-40 text-[14px] sm:text-[16px]"
           >
             Prev
           </button>
@@ -620,7 +622,7 @@ export default function App() {
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="px-4 py-1.5 rounded-none bg-white border border-[#e0e0e0] disabled:opacity-40"
+            className="px-3 py-1 md:px-4 md:py-1.5 rounded-none bg-white border border-[#e0e0e0] disabled:opacity-40 text-[14px] sm:text-[16px]"
           >
             Next
           </button>
@@ -725,16 +727,16 @@ export default function App() {
                   />
                 </div>
               </div>
-              <div className="flex gap-2 mt-6 justify-end">
+              <div className="flex flex-col sm:flex-row gap-2 mt-6 justify-end">
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[#757575] hover:bg-[#f5f5f5]"
+                  className="w-full sm:w-auto px-4 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[#757575] hover:bg-[#f5f5f5]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
-                  className="px-4 py-1.5 rounded-none bg-[#000000] text-white hover:bg-[#1a1a1a]"
+                  className="w-full sm:w-auto px-4 py-1.5 rounded-none bg-[#000000] text-white hover:bg-[#1a1a1a]"
                 >
                   Save
                 </button>
@@ -844,16 +846,16 @@ export default function App() {
                   />
                 </div>
               </div>
-              <div className="flex gap-2 mt-6 justify-end">
+              <div className="flex flex-col sm:flex-row gap-2 mt-6 justify-end">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[#757575] hover:bg-[#f5f5f5]"
+                  className="w-full sm:w-auto px-4 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[#757575] hover:bg-[#f5f5f5]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={addManual}
-                  className="px-4 py-1.5 rounded-none bg-[#000000] text-white hover:bg-[#1a1a1a]"
+                  className="w-full sm:w-auto px-4 py-1.5 rounded-none bg-[#000000] text-white hover:bg-[#1a1a1a]"
                 >
                   Save
                 </button>
