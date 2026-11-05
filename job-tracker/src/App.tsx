@@ -44,7 +44,7 @@ const INITIAL_FORM: ManualForm = {
 
 const STATUSES = ["New", "Applied", "Interview", "Offer", "Rejected", "Set Aside"]
 const TABS = ["All", "Today", ...STATUSES]
-const PAGE_SIZE = 10
+const PAGE_SIZE = 12
 
 function normalizeDate(value: string | null | undefined): string | null {
   if (!value) return null
@@ -179,6 +179,7 @@ export default function App() {
   const [editJob, setEditJob] = useState<Job | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editForm, setEditForm] = useState<ManualForm>({ ...INITIAL_FORM })
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -214,9 +215,18 @@ export default function App() {
         setShowEditModal(false)
       }
     }
+    const onScroll = () => setScrolled(window.scrollY > 200)
     window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => {
+      window.removeEventListener("keydown", onKey)
+      window.removeEventListener("scroll", onScroll)
+    }
   }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
   const handleStatusChange = async (job: Job, status: string) => {
     const now = new Date().toISOString().slice(0, 10)
@@ -625,6 +635,16 @@ export default function App() {
             Next
           </button>
         </div>
+
+        {scrolled && (
+          <button
+            onClick={scrollToTop}
+            className="fixed bottom-4 right-4 z-40 bg-[#000000] text-white px-4 py-2 rounded-none text-[14px] shadow-md hover:bg-[#1a1a1a] transition"
+            aria-label="Back to top"
+          >
+            ↑ Top
+          </button>
+        )}
 
         {showEditModal && editJob && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-0">
