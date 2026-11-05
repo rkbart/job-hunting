@@ -527,50 +527,48 @@ export default function App() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {paged.map((j) => (
             <div key={j.url} className="rounded-none bg-white border border-[#e0e0e0] p-4 md:p-6">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-[18px] md:text-[21px] font-normal italic" style={{ letterSpacing: "-0.28px", fontFamily: 'Georgia, "Times New Roman", serif' }}>
-                      {j.title}
-                    </h2>
-                    <span className={`text-xs px-2 py-0.5 rounded-none ${j.verdict === "apply" ? "bg-[#f5f5f5] text-[#000000]" : "bg-[#f5f5f5] text-[#000000]"}`}>
-                      {j.score} · {j.verdict}
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded-none bg-[#f5f5f5] text-[#757575]">{j.source}</span>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-[18px] md:text-[21px] font-normal italic" style={{ letterSpacing: "-0.28px", fontFamily: 'Georgia, "Times New Roman", serif' }}>
+                    {j.title}
+                  </h2>
+                  <span className={`text-xs px-2 py-0.5 rounded-none ${j.verdict === "apply" ? "bg-[#f5f5f5] text-[#000000]" : "bg-[#f5f5f5] text-[#000000]"}`}>
+                    {j.score} · {j.verdict}
+                  </span>
+                  <span className="text-xs px-2 py-0.5 rounded-none bg-[#f5f5f5] text-[#757575]">{j.source}</span>
+                </div>
+                <p className="text-[#000000] mt-1 font-medium">{j.company}</p>
+                <p className="text-[14px] text-[#757575] mt-2" style={{ lineHeight: 1.43 }}>
+                  {j.reason}
+                </p>
+                <div className="flex gap-3 mt-2 text-[12px] text-[#757575] flex-wrap">
+                  <span>Found: {j.date_found}</span>
+                  {j.appliedDate && <span>Applied: {j.appliedDate}</span>}
+                  {j.interviewDate && <span>Interview: {j.interviewDate}</span>}
+                </div>
+                <div className="flex flex-col gap-3 mt-2 sm:flex-row">
+                  <div className="flex-1 md:flex-1 max-w-full">
+                    <label className="text-[12px] text-[#757575] block mb-1">Applied date</label>
+                    <input
+                      type="date"
+                      className="max-w-full md:w-[160px] px-2 py-1 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
+                      value={j.appliedDate || ""}
+                      onChange={(e) => handleDateChange(j, "appliedDate", e.target.value)}
+                    />
                   </div>
-                  <p className="text-[#000000] mt-1 font-medium">{j.company}</p>
-                  <p className="text-[14px] text-[#757575] mt-2" style={{ lineHeight: 1.43 }}>
-                    {j.reason}
-                  </p>
-                  <div className="flex gap-3 mt-2 text-[12px] text-[#757575] flex-wrap">
-                    <span>Found: {j.date_found}</span>
-                    {j.appliedDate && <span>Applied: {j.appliedDate}</span>}
-                    {j.interviewDate && <span>Interview: {j.interviewDate}</span>}
-                  </div>
-                  <div className="flex flex-col gap-3 mt-2 sm:flex-row">
+                  {j.status === "Interview" && (
                     <div className="flex-1 md:flex-1 max-w-full">
-                      <label className="text-[12px] text-[#757575] block mb-1">Applied date</label>
+                      <label className="text-[12px] text-[#757575] block mb-1">Interview date</label>
                       <input
                         type="date"
                         className="max-w-full md:w-[160px] px-2 py-1 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
-                        value={j.appliedDate || ""}
-                        onChange={(e) => handleDateChange(j, "appliedDate", e.target.value)}
+                        value={j.interviewDate || ""}
+                        onChange={(e) => handleDateChange(j, "interviewDate", e.target.value)}
                       />
                     </div>
-                    {j.status === "Interview" && (
-                      <div className="flex-1 md:flex-1 max-w-full">
-                        <label className="text-[12px] text-[#757575] block mb-1">Interview date</label>
-                        <input
-                          type="date"
-                          className="max-w-full md:w-[160px] px-2 py-1 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
-                          value={j.interviewDate || ""}
-                          onChange={(e) => handleDateChange(j, "interviewDate", e.target.value)}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
-                <div className="flex flex-col gap-2 md:items-end w-auto max-w-full">
+                <div className="flex flex-col gap-2 sm:flex-row mt-3 pt-3 border-t border-[#e0e0e0]">
                   <select
                     className="max-w-full md:w-auto px-3 py-1.5 rounded-none bg-white border border-[#e0e0e0] text-[14px]"
                     value={j.status}
