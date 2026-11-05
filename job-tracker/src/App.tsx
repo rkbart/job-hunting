@@ -469,6 +469,16 @@ export default function App() {
           ))}
         </div>
 
+        <div className="flex flex-wrap gap-2 text-xs text-[#7a7a7a] mb-6">
+          <span className={`font-medium ${tab === "All" ? "text-[#0066cc]" : "text-[#1d1d1f]"}`}>All: {counts.All}</span>
+          <span className={`font-medium ${tab === "Today" ? "text-[#0066cc]" : "text-[#1d1d1f]"}`}>Today: {counts.Today}</span>
+          {STATUSES.map((s) => (
+            <span key={s} className={`font-medium ${tab === s ? "text-[#0066cc]" : "text-[#1d1d1f]"}`}>
+              {s}: {counts[s]}
+            </span>
+          ))}
+        </div>
+
         <div className="flex flex-col md:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <input
