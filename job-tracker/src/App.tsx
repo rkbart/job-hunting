@@ -78,13 +78,13 @@ async function saveJobToDB(j: Job) {
     dateFound: j.date_found,
     appliedDate: j.appliedDate ?? null,
     interviewDate: j.interviewDate ?? null,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
   }).onConflictDoNothing()
 }
 
 async function updateJobInDB(url: string, patch: Partial<Job>) {
-  const values: Record<string, any> = { updatedAt: Date.now() }
+  const values: Record<string, any> = { updatedAt: new Date() }
   if (patch.status !== undefined) values.status = patch.status
   if (patch.appliedDate !== undefined) values.appliedDate = patch.appliedDate ?? null
   if (patch.interviewDate !== undefined) values.interviewDate = patch.interviewDate ?? null
@@ -100,7 +100,7 @@ async function updateJobInDB(url: string, patch: Partial<Job>) {
 }
 
 async function importJobsToDB(jobsList: Job[]) {
-  const now = Date.now()
+  const now = new Date()
   for (const j of jobsList) {
     await db.insert(jobs).values({
       url: j.url,
